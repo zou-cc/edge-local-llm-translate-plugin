@@ -6,13 +6,7 @@
     body { 
       width: 350px; 
       padding: 15px; 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
-    }
-    h1 { 
-      font-size: 16px; 
-      margin: 0 0 15px 0;
-      color: #333;
+      font-family: Arial, sans-serif;
     }
     .section {
       background: #f5f5f5;
@@ -20,195 +14,117 @@
       margin: 10px 0;
       border-radius: 6px;
     }
-    .section h2 {
-      font-size: 13px;
-      margin: 0 0 10px 0;
-      color: #666;
-    }
     label {
       display: block;
       margin: 8px 0 3px;
       font-size: 12px;
+      font-weight: bold;
     }
     input, select {
       width: 100%;
       padding: 6px;
       font-size: 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
       box-sizing: border-box;
     }
     button {
       padding: 8px 15px;
       margin: 5px 0;
-      border: none;
-      border-radius: 4px;
       cursor: pointer;
-      font-size: 12px;
     }
     .btn-primary {
       background: #4CAF50;
       color: white;
+      border: none;
       width: 100%;
     }
     .btn-secondary {
-      background: #e0e0e0;
-      color: #333;
+      background: #ddd;
+      border: none;
     }
     .status {
       font-size: 11px;
       margin-left: 5px;
     }
-    .success { color: #4CAF50; }
-    .error { color: #f44336; }
-    .testing { color: #666; }
-    .info {
-      font-size: 11px;
-      color: #666;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid #ddd;
-    }
+    .success { color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
-  <h1>本地LLM划词翻译</h1>
+  <h3>本地LLM划词翻译设置</h3>
   
   <div class="section">
-    <h2>模型设置</h2>
-    <label>引擎类型</label>
-    <select id="engineType">
-      <option value="ollama" selected>Ollama</option>
-      <option value="vllm">vLLM</option>
-      <option value="lmstudio">LMStudio</option>
-      <option value="litellm">LiteLLM</option>
-    </select>
-    
     <label>API地址</label>
-    <input type="text" id="apiUrl" value="http://localhost:11434" placeholder="http://localhost:11434">
+    <input type="text" id="apiUrl" value="http://localhost:11434">
     
     <label>模型名称</label>
-    <input type="text" id="modelName" value="qwen3.5:35b" placeholder="如: qwen3.5:35b">
+    <input type="text" id="modelName" value="qwen3.5:35b">
     
-    <button id="testConnectionBtn" class="btn-secondary">测试连接</button>
-    <span id="connectionStatus" class="status"></span>
-  </div>
-  
-  <div class="section">
-    <h2>翻译设置</h2>
-    <label>目标语言</label>
-    <select id="targetLanguage">
-      <option value="中文" selected>中文</option>
-      <option value="英文">英文</option>
-      <option value="日文">日文</option>
-      <option value="韩文">韩文</option>
-    </select>
-    
-    <label>语速: <span id="ttsRateValue">1.0</span>x</label>
-    <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1">
+    <button id="testBtn" class="btn-secondary">测试连接</button>
+    <span id="status" class="status"></span>
   </div>
   
   <button id="saveBtn" class="btn-primary">保存设置</button>
-  <div id="saveStatus" class="status"></div>
-  
-  <div class="info">
-    <strong>使用方法：</strong><br>
-    1. 在任意网页划选文字<br>
-    2. 单词会显示悬浮窗<br>
-    3. 句子会打开侧边栏<br>
-    <br>
-    <strong>快捷键：</strong>Alt+T 触发翻译
-  </div>
 
   <script>
-    const DEFAULT_CONFIG = {
-      engineType: 'ollama',
-      apiUrl: 'http://localhost:11434',
-      modelName: 'qwen3.5:35b',
-      targetLanguage: '中文',
-      ttsRate: 1.0,
-      sourceLanguages: ['英文'],
-      autoTranslate: true,
-      wordThreshold: 20
-    };
-    
-    // 加载配置
-    async function loadConfig() {
-      try {
-        const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
-        if (response.success && response.data) {
-          const config = response.data;
-          document.getElementById('engineType').value = config.engineType || DEFAULT_CONFIG.engineType;
-          document.getElementById('apiUrl').value = config.apiUrl || DEFAULT_CONFIG.apiUrl;
-          document.getElementById('modelName').value = config.modelName || DEFAULT_CONFIG.modelName;
-          document.getElementById('targetLanguage').value = config.targetLanguage || DEFAULT_CONFIG.targetLanguage;
-          document.getElementById('ttsRate').value = config.ttsRate || DEFAULT_CONFIG.ttsRate;
-          document.getElementById('ttsRateValue').textContent = config.ttsRate || DEFAULT_CONFIG.ttsRate;
-        }
-      } catch (error) {
-        console.error('Failed to load config:', error);
-      }
-    }
+    console.log('Popup loaded');
     
     // 测试连接
-    document.getElementById('testConnectionBtn').addEventListener('click', async () => {
-      const statusEl = document.getElementById('connectionStatus');
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      console.log('Test button clicked');
+      const statusEl = document.getElementById('status');
       statusEl.textContent = '测试中...';
-      statusEl.className = 'status testing';
       
       try {
         const response = await chrome.runtime.sendMessage({ action: 'testConnection' });
+        console.log('Response:', response);
         
         if (response.success && response.connected) {
-          statusEl.textContent = '连接成功!';
+          statusEl.textContent = '✓ 连接成功';
           statusEl.className = 'status success';
         } else {
-          statusEl.textContent = '连接失败';
+          statusEl.textContent = '✗ 连接失败';
           statusEl.className = 'status error';
         }
       } catch (error) {
+        console.error('Error:', error);
         statusEl.textContent = '错误: ' + error.message;
         statusEl.className = 'status error';
       }
     });
     
-    // 保存配置
+    // 保存
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const config = {
-        engineType: document.getElementById('engineType').value,
+        engineType: 'ollama',
         apiUrl: document.getElementById('apiUrl').value.trim(),
         modelName: document.getElementById('modelName').value.trim(),
-        targetLanguage: document.getElementById('targetLanguage').value,
-        ttsRate: parseFloat(document.getElementById('ttsRate').value),
+        targetLanguage: '中文',
+        ttsRate: 1.0,
         sourceLanguages: ['英文'],
         autoTranslate: true,
         wordThreshold: 20
       };
       
       try {
-        const response = await chrome.runtime.sendMessage({ action: 'setConfig', config });
-        const statusEl = document.getElementById('saveStatus');
-        if (response.success) {
-          statusEl.textContent = '保存成功!';
-          statusEl.className = 'status success';
-        } else {
-          statusEl.textContent = '保存失败';
-          statusEl.className = 'status error';
-        }
-        setTimeout(() => statusEl.textContent = '', 3000);
+        await chrome.runtime.sendMessage({ action: 'setConfig', config });
+        document.getElementById('saveBtn').textContent = '已保存!';
+        setTimeout(() => {
+          document.getElementById('saveBtn').textContent = '保存设置';
+        }, 2000);
       } catch (error) {
-        document.getElementById('saveStatus').textContent = '错误: ' + error.message;
-        document.getElementById('saveStatus').className = 'status error';
+        console.error('Save error:', error);
       }
     });
     
-    // 语速显示
-    document.getElementById('ttsRate').addEventListener('input', (e) => {
-      document.getElementById('ttsRateValue').textContent = e.target.value;
-    });
-    
-    // 初始化
-    loadConfig();
+    // 加载现有配置
+    chrome.runtime.sendMessage({ action: 'getConfig' })
+      .then(response => {
+        if (response.success && response.data) {
+          document.getElementById('apiUrl').value = response.data.apiUrl || 'http://localhost:11434';
+          document.getElementById('modelName').value = response.data.modelName || 'qwen3.5:35b';
+        }
+      })
+      .catch(console.error);
   </script>
 </body>
 </html>
