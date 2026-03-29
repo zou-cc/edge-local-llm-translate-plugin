@@ -4,32 +4,31 @@ import { ENGINE_TYPES, PROMPT_TEMPLATES } from '../shared/constants.js';
 
 class LLMClient {
   constructor() {
-    this.timeout = 60000; // 1分钟
+    // 增加超时到 3 分钟（VSCode 可能也是这个级别）
+    this.timeout = 180000;
   }
 
   async translate(text, isWord, targetLang) {
-    console.log('=== LLMClient.translate ===');
-    console.log('Input text:', text);
-    console.log('isWord:', isWord);
+    console.log('=== LLM Translate ===');
+    console.log('Text:', text.substring(0, 50));
     
     const engineConfig = await configManager.getEngineConfig();
-    console.log('Engine:', engineConfig.engineType);
-    console.log('Model:', engineConfig.modelName);
-    
     const prompt = isWord 
       ? PROMPT_TEMPLATES.word(text, targetLang)
       : PROMPT_TEMPLATES.sentence(text, targetLang);
-    
-    console.log('Prompt:', prompt);
 
     try {
+      console.log('Calling Ollama...');
+      const startTime = Date.now();
+      
       const response = await this.callOllamaNative(
         engineConfig.apiUrl, 
         engineConfig.modelName, 
         prompt
       );
       
-      console.log('Ollama raw response:', response);
+      const duration = Date.now() - startTime;
+      console.log('Translation completed in', duration, 'ms');
       
       return {
         success: true,
@@ -45,14 +44,16 @@ class LLMClient {
   }
 
   async callOllamaNative(apiUrl, modelName, prompt) {
-    console.log('=== Calling Ollama ===');
-    console.log('URL:', apiUrl + '/api/generate');
+    console.log('Calling Ollama API...');
     
-    const url = apiUrl + '/api/generate';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log('Timeout reached, aborting...');
+      controller.abort();
+    }, this.timeout);
     
     try {
-      console.log('Sending fetch request...');
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl + '/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -61,27 +62,30 @@ class LLMClient {
           model: modelName,
           prompt: prompt,
           stream: false
-        })
+        }),
+        signal: controller.signal
       });
 
-      console.log('Response status:', response.status);
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('HTTP ' + response.status);
       }
 
       const data = await response.json();
-      console.log('Response data:', JSON.stringify(data).substring(0, 500));
       
       if (!data.response) {
-        throw new Error('Empty response from Ollama');
+        throw new Error('Empty response');
       }
       
-      console.log('Translation text:', data.response);
+      console.log('Ollama response received');
       return data.response;
       
     } catch (error) {
-      console.error('Ollama call error:', error);
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('请求超时（3分钟），请检查模型是否繁忙');
+      }
       throw error;
     }
   }
