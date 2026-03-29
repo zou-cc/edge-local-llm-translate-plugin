@@ -34,15 +34,18 @@ export function extractPhonetic(response) {
  * 解析单词翻译响应 - 支持多种格式
  */
 export function parseWordTranslation(response) {
-  console.log('Parsing word translation:', response.substring(0, 100));
+  console.log('Raw response for parsing:', JSON.stringify(response).substring(0, 200));
+  
+  if (!response || response.trim() === '') {
+    console.log('Empty response');
+    return { phonetic: null, meaning: '无翻译结果', example: null, raw: response };
+  }
   
   const phonetic = extractPhonetic(response);
   let meaning = '';
   let example = null;
   
-  // 尝试多种格式匹配
-  
-  // 1. 标准格式：释义：xxx
+  // 1. 尝试标准格式：释义：xxx
   const meaningMatch1 = response.match(/释义[：:]\s*(.+?)(?=\n|例句|$)/);
   if (meaningMatch1) {
     meaning = meaningMatch1[1].trim();
@@ -64,7 +67,7 @@ export function parseWordTranslation(response) {
     }
   }
   
-  // 4. 如果没有找到标记，取第一行非空内容
+  // 4. 如果没有找到标记，取第一个非空且非thinking的行
   if (!meaning) {
     const lines = response.split('\n').map(l => l.trim()).filter(l => l);
     for (const line of lines) {
@@ -76,17 +79,28 @@ export function parseWordTranslation(response) {
       if (/^[\/\s]*$/.test(line)) {
         continue;
       }
-      // 找到第一个有意义的内容
-      if (line.length > 0 && line.length < 100) {
+      // 跳过json标记
+      if (line === '{' || line === '}' || line.startsWith('"')) {
+        continue;
+      }
+      // 找到第一个有意义的内容（不限长度）
+      if (line.length > 0) {
         meaning = line;
         break;
       }
     }
   }
   
-  // 5. 如果还是没有，使用整个响应的前100个字符
+  // 5. 如果还是没有，使用整个响应（去除空行和thinking部分）
   if (!meaning) {
-    meaning = response.trim().substring(0, 100);
+    // 移除thinking部分
+    const withoutThinking = response.replace(/Thinking Process:[\s\S]*?(?=\n\n|$)/i, '');
+    const lines = withoutThinking.split('\n').map(l => l.trim()).filter(l => l && l.length > 0);
+    if (lines.length > 0) {
+      meaning = lines[0];
+    } else {
+      meaning = response.trim().substring(0, 100);
+    }
   }
   
   // 提取例句
@@ -103,14 +117,15 @@ export function parseWordTranslation(response) {
     }
   }
   
-  console.log('Parsed result:', { phonetic, meaning: meaning.substring(0, 50), example: example?.substring(0, 50) });
-  
-  return { 
+  const result = { 
     phonetic, 
     meaning: meaning || '无翻译结果', 
     example, 
     raw: response 
   };
+  
+  console.log('Parsed result:', result);
+  return result;
 }
 
 /**
@@ -118,6 +133,10 @@ export function parseWordTranslation(response) {
  */
 export function parseSentenceTranslation(response) {
   console.log('Parsing sentence translation:', response.substring(0, 100));
+  
+  if (!response || response.trim() === '') {
+    return '无翻译结果';
+  }
   
   // 1. 尝试提取"翻译："之后的内容
   const translationMatch = response.match(/翻译[：:]\s*([\s\S]+)/);
@@ -131,14 +150,12 @@ export function parseSentenceTranslation(response) {
     return translationMatch2[1].trim();
   }
   
-  // 3. 如果没有特定格式，取第一行非空内容（排除thinking）
-  const lines = response.split('\n').map(l => l.trim()).filter(l => l);
+  // 3. 移除thinking部分，取第一行
+  const withoutThinking = response.replace(/Thinking Process:[\s\S]*?(?=\n\n|$)/i, '');
+  const lines = withoutThinking.split('\n').map(l => l.trim()).filter(l => l);
+  
   for (const line of lines) {
-    // 跳过thinking相关内容
-    if (line.includes('Thinking') || line.includes('思考') || line.includes('Process')) {
-      continue;
-    }
-    if (line.length > 0) {
+    if (line.length > 0 && !line.includes('Thinking') && !line.includes('思考')) {
       return line;
     }
   }
