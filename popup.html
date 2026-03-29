@@ -1,130 +1,37 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { 
-      width: 350px; 
-      padding: 15px; 
-      font-family: Arial, sans-serif;
-    }
-    .section {
-      background: #f5f5f5;
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 6px;
-    }
-    label {
-      display: block;
-      margin: 8px 0 3px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    input, select {
-      width: 100%;
-      padding: 6px;
-      font-size: 12px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 8px 15px;
-      margin: 5px 0;
-      cursor: pointer;
-    }
-    .btn-primary {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      width: 100%;
-    }
-    .btn-secondary {
-      background: #ddd;
-      border: none;
-    }
-    .status {
-      font-size: 11px;
-      margin-left: 5px;
-    }
-    .success { color: green; }
-    .error { color: red; }
-  </style>
-</head>
-<body>
-  <h3>本地LLM划词翻译设置</h3>
+<body style="width: 300px; padding: 20px;">
+  <h3>本地LLM划词翻译</h3>
+  <p>状态: <span id="status">检查中...</span></p>
+  <button id="testBtn">测试连接</button>
+  <div id="result" style="margin-top: 10px; color: #666;"></div>
   
-  <div class="section">
-    <label>API地址</label>
-    <input type="text" id="apiUrl" value="http://localhost:11434">
-    
-    <label>模型名称</label>
-    <input type="text" id="modelName" value="qwen3.5:35b">
-    
-    <button id="testBtn" class="btn-secondary">测试连接</button>
-    <span id="status" class="status"></span>
-  </div>
-  
-  <button id="saveBtn" class="btn-primary">保存设置</button>
-
   <script>
-    console.log('Popup loaded');
+    // 检查chrome.runtime是否可用
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
     
-    // 测试连接
+    if (typeof chrome === 'undefined') {
+      statusEl.textContent = '错误: chrome对象不存在';
+      statusEl.style.color = 'red';
+    } else if (!chrome.runtime) {
+      statusEl.textContent = '错误: chrome.runtime不存在';
+      statusEl.style.color = 'red';
+    } else {
+      statusEl.textContent = '正常';
+      statusEl.style.color = 'green';
+    }
+    
     document.getElementById('testBtn').addEventListener('click', async () => {
-      console.log('Test button clicked');
-      const statusEl = document.getElementById('status');
-      statusEl.textContent = '测试中...';
-      
       try {
-        const response = await chrome.runtime.sendMessage({ action: 'testConnection' });
-        console.log('Response:', response);
-        
-        if (response.success && response.connected) {
-          statusEl.textContent = '✓ 连接成功';
-          statusEl.className = 'status success';
-        } else {
-          statusEl.textContent = '✗ 连接失败';
-          statusEl.className = 'status error';
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        statusEl.textContent = '错误: ' + error.message;
-        statusEl.className = 'status error';
+        resultEl.textContent = '测试中...';
+        const response = await chrome.runtime.sendMessage({action: 'testConnection'});
+        resultEl.textContent = JSON.stringify(response);
+      } catch (e) {
+        resultEl.textContent = '错误: ' + e.message;
+        resultEl.style.color = 'red';
       }
     });
-    
-    // 保存
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      const config = {
-        engineType: 'ollama',
-        apiUrl: document.getElementById('apiUrl').value.trim(),
-        modelName: document.getElementById('modelName').value.trim(),
-        targetLanguage: '中文',
-        ttsRate: 1.0,
-        sourceLanguages: ['英文'],
-        autoTranslate: true,
-        wordThreshold: 20
-      };
-      
-      try {
-        await chrome.runtime.sendMessage({ action: 'setConfig', config });
-        document.getElementById('saveBtn').textContent = '已保存!';
-        setTimeout(() => {
-          document.getElementById('saveBtn').textContent = '保存设置';
-        }, 2000);
-      } catch (error) {
-        console.error('Save error:', error);
-      }
-    });
-    
-    // 加载现有配置
-    chrome.runtime.sendMessage({ action: 'getConfig' })
-      .then(response => {
-        if (response.success && response.data) {
-          document.getElementById('apiUrl').value = response.data.apiUrl || 'http://localhost:11434';
-          document.getElementById('modelName').value = response.data.modelName || 'qwen3.5:35b';
-        }
-      })
-      .catch(console.error);
   </script>
 </body>
 </html>
