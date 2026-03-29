@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>本地LLM划词翻译 - 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>本地LLM划词翻译设置</h1>
+      <p class="subtitle">配置您的本地大模型和翻译偏好</p>
+    </header>
+
+    <main>
+      <!-- 引擎设置 -->
+      <section class="card">
+        <h2>模型引擎设置</h2>
+        
+        <div class="form-group">
+          <label for="engineType">引擎类型</label>
+          <select id="engineType">
+            <option value="ollama">Ollama</option>
+            <option value="vllm">vLLM</option>
+            <option value="lmstudio">LMStudio</option>
+            <option value="litellm">LiteLLM</option>
+          </select>
+          <p class="help-text">选择您本地运行的LLM引擎</p>
+        </div>
+
+        <div class="form-group">
+          <label for="apiUrl">API地址</label>
+          <input type="text" id="apiUrl" placeholder="http://localhost:11434">
+          <p class="help-text">本地模型的API地址</p>
+        </div>
+
+        <div class="form-group">
+          <label for="modelName">模型名称</label>
+          <input type="text" id="modelName" placeholder="qwen2.5:7b">
+          <p class="help-text">例如：qwen2.5:7b, llama3.1, gpt-4等</p>
+        </div>
+
+        <div class="form-group">
+          <button id="testConnectionBtn" class="btn btn-secondary">测试连接</button>
+          <span id="connectionStatus" class="status"></span>
+        </div>
+      </section>
+
+      <!-- 语言设置 -->
+      <section class="card">
+        <h2>语言设置</h2>
+        
+        <div class="form-group">
+          <label>源语言（可多选）</label>
+          <div id="sourceLanguages" class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" value="英文" checked> 英文
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="日文"> 日文
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="韩文"> 韩文
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="法文"> 法文
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="德文"> 德文
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="西班牙文"> 西班牙文
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" value="俄文"> 俄文
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="targetLanguage">目标语言</label>
+          <select id="targetLanguage">
+            <option value="中文" selected>中文</option>
+            <option value="英文">英文</option>
+            <option value="日文">日文</option>
+            <option value="韩文">韩文</option>
+            <option value="法文">法文</option>
+            <option value="德文">德文</option>
+            <option value="西班牙文">西班牙文</option>
+            <option value="俄文">俄文</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 语音设置 -->
+      <section class="card">
+        <h2>语音朗读设置</h2>
+        
+        <div class="form-group">
+          <label for="ttsRate">语速</label>
+          <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1">
+          <span id="ttsRateValue">1.0x</span>
+        </div>
+
+        <div class="form-group">
+          <button id="testTtsBtn" class="btn btn-secondary">测试朗读</button>
+        </div>
+      </section>
+
+      <!-- 高级设置 -->
+      <section class="card">
+        <h2>高级设置</h2>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="autoTranslate" checked>
+            划词自动翻译
+          </label>
+          <p class="help-text">关闭后需要手动按快捷键才能翻译</p>
+        </div>
+
+        <div class="form-group">
+          <label for="wordThreshold">单词长度阈值</label>
+          <input type="number" id="wordThreshold" min="10" max="100" value="20">
+          <p class="help-text">少于此字符数视为单词，否则视为句子</p>
+        </div>
+
+        <div class="form-group">
+          <button id="clearCacheBtn" class="btn btn-secondary">清除翻译缓存</button>
+          <span id="cacheStatus"></span>
+        </div>
+      </section>
+
+      <!-- 保存按钮 -->
+      <div class="actions">
+        <button id="saveBtn" class="btn btn-primary btn-lg">保存设置</button>
+        <button id="resetBtn" class="btn btn-secondary">恢复默认</button>
+      </div>
+
+      <div id="saveStatus" class="save-status"></div>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
