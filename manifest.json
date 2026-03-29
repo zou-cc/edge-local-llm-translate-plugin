@@ -39,7 +39,8 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "本地LLM划词翻译"
+    "default_title": "本地LLM划词翻译",
+    "default_popup": "popup.html"
   },
   "icons": {
     "16": "icons/icon16.png",
