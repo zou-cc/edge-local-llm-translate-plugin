@@ -37,13 +37,24 @@ function initContentScript() {
 
   async function loadConfig() {
     try {
+      // 检查扩展上下文是否有效
+      if (!chrome.runtime || !chrome.runtime.id) {
+        console.log('Extension context not available, skipping config load');
+        return;
+      }
+      
       const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
       if (response.success) {
         config = response.data;
         textProcessor.wordThreshold = config.wordThreshold;
       }
     } catch (error) {
-      console.error('Failed to load config:', error);
+      // 忽略"Extension context invalidated"错误
+      if (error.message && error.message.includes('Extension context invalidated')) {
+        console.log('Extension context invalidated, will retry on next focus');
+      } else {
+        console.error('Failed to load config:', error);
+      }
     }
   }
 
