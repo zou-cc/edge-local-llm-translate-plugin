@@ -1,35 +1,94 @@
 <!DOCTYPE html>
 <html>
-<body style="width: 300px; padding: 20px;">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 350px; padding: 15px; font-family: Arial, sans-serif; }
+    h3 { margin: 0 0 15px 0; color: #333; }
+    .section { background: #f5f5f5; padding: 12px; margin: 10px 0; border-radius: 6px; }
+    label { display: block; margin: 8px 0 3px; font-size: 12px; font-weight: bold; }
+    input { width: 100%; padding: 6px; font-size: 12px; box-sizing: border-box; }
+    button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; }
+    .btn-primary { background: #4CAF50; color: white; width: 100%; }
+    .btn-secondary { background: #ddd; }
+    .status { font-size: 11px; margin-left: 5px; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
   <h3>本地LLM划词翻译</h3>
-  <p>状态: <span id="status">检查中...</span></p>
-  <button id="testBtn">测试连接</button>
-  <div id="result" style="margin-top: 10px; color: #666;"></div>
   
+  <div class="section">
+    <label>API地址</label>
+    <input type="text" id="apiUrl" value="http://localhost:11434">
+    
+    <label>模型名称</label>
+    <input type="text" id="modelName" value="qwen3.5:35b">
+    
+    <button id="testBtn" class="btn-secondary">测试连接</button>
+    <span id="connectionStatus" class="status"></span>
+  </div>
+  
+  <button id="saveBtn" class="btn-primary">保存设置</button>
+  <div id="saveStatus" class="status"></div>
+
   <script>
-    // 检查chrome.runtime是否可用
-    const statusEl = document.getElementById('status');
-    const resultEl = document.getElementById('result');
+    // 加载配置
+    chrome.runtime.sendMessage({action: 'getConfig'}).then(r => {
+      if (r.success && r.data) {
+        document.getElementById('apiUrl').value = r.data.apiUrl || 'http://localhost:11434';
+        document.getElementById('modelName').value = r.data.modelName || 'qwen3.5:35b';
+      }
+    }).catch(console.error);
     
-    if (typeof chrome === 'undefined') {
-      statusEl.textContent = '错误: chrome对象不存在';
-      statusEl.style.color = 'red';
-    } else if (!chrome.runtime) {
-      statusEl.textContent = '错误: chrome.runtime不存在';
-      statusEl.style.color = 'red';
-    } else {
-      statusEl.textContent = '正常';
-      statusEl.style.color = 'green';
-    }
-    
+    // 测试连接
     document.getElementById('testBtn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('connectionStatus');
+      statusEl.textContent = '测试中...';
+      
       try {
-        resultEl.textContent = '测试中...';
         const response = await chrome.runtime.sendMessage({action: 'testConnection'});
-        resultEl.textContent = JSON.stringify(response);
-      } catch (e) {
-        resultEl.textContent = '错误: ' + e.message;
-        resultEl.style.color = 'red';
+        if (response.success && response.connected) {
+          statusEl.textContent = '✓ 连接成功';
+          statusEl.className = 'status success';
+        } else {
+          statusEl.textContent = '✗ 连接失败';
+          statusEl.className = 'status error';
+        }
+      } catch (error) {
+        statusEl.textContent = '错误: ' + error.message;
+        statusEl.className = 'status error';
+      }
+    });
+    
+    // 保存配置
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const config = {
+        engineType: 'ollama',
+        apiUrl: document.getElementById('apiUrl').value.trim(),
+        modelName: document.getElementById('modelName').value.trim(),
+        targetLanguage: '中文',
+        ttsRate: 1.0,
+        sourceLanguages: ['英文'],
+        autoTranslate: true,
+        wordThreshold: 20
+      };
+      
+      try {
+        const response = await chrome.runtime.sendMessage({action: 'setConfig', config});
+        const statusEl = document.getElementById('saveStatus');
+        if (response.success) {
+          statusEl.textContent = '保存成功!';
+          statusEl.className = 'status success';
+        } else {
+          statusEl.textContent = '保存失败';
+          statusEl.className = 'status error';
+        }
+        setTimeout(() => statusEl.textContent = '', 3000);
+      } catch (error) {
+        document.getElementById('saveStatus').textContent = '错误: ' + error.message;
+        document.getElementById('saveStatus').className = 'status error';
       }
     });
   </script>
