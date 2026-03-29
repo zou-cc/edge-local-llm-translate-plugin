@@ -6,7 +6,15 @@ class FloatingPopup {
     this.currentText = null;
     this.translationText = null;
     this.config = null;
+    this.isContextValid = true;
     this.createElement();
+  }
+
+  isExtensionContextValid() {
+    return typeof chrome !== 'undefined' && 
+           chrome.runtime && 
+           chrome.runtime.id &&
+           this.isContextValid;
   }
 
   createElement() {
@@ -40,6 +48,11 @@ class FloatingPopup {
   }
 
   async show(text, position) {
+    if (!this.isExtensionContextValid()) {
+      console.log('Extension context invalid, cannot show popup');
+      return;
+    }
+    
     this.currentText = text;
     
     this.element.querySelector('.original-text').textContent = text;
@@ -99,12 +112,13 @@ class FloatingPopup {
   }
 
   async requestTranslation(text) {
+    if (!this.isExtensionContextValid()) {
+      this.element.querySelector('.loading').style.display = 'none';
+      this.displayError('扩展已更新，请刷新页面');
+      return;
+    }
+    
     try {
-      if (!chrome.runtime || !chrome.runtime.id) {
-        this.displayError('扩展上下文失效，请刷新页面');
-        return;
-      }
-      
       const response = await chrome.runtime.sendMessage({
         action: 'translate',
         text: text,
@@ -114,17 +128,19 @@ class FloatingPopup {
 
       this.element.querySelector('.loading').style.display = 'none';
 
-      if (response.success) {
+      if (response && response.success) {
         this.displayResult(response.data);
       } else {
-        this.displayError(response.error || '翻译失败');
+        this.displayError(response?.error || '翻译失败');
       }
     } catch (error) {
       this.element.querySelector('.loading').style.display = 'none';
       if (error.message && error.message.includes('Extension context invalidated')) {
+        this.isContextValid = false;
         this.displayError('扩展已更新，请刷新页面');
       } else {
-        this.displayError('翻译服务异常');
+        console.error('Translation error:', error);
+        this.displayError('翻译服务异常: ' + error.message);
       }
     }
   }

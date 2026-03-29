@@ -11,7 +11,7 @@ function initContentScript() {
   console.log('Content script initializing...');
   
   // 检查chrome.runtime是否可用
-  if (typeof chrome === 'undefined' || !chrome.runtime) {
+  if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
     console.error('Extension context not available');
     return;
   }
@@ -20,6 +20,7 @@ function initContentScript() {
   const floatingPopup = new FloatingPopup();
   const sidebarManager = new SidebarManager();
   let config = null;
+  let isContextValid = true;
 
   // 加载配置
   loadConfig();
@@ -28,30 +29,41 @@ function initContentScript() {
   bindEvents();
 
   // 监听来自background的消息
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    handleMessage(request, sender, sendResponse);
-    return true;
-  });
+  try {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      handleMessage(request, sender, sendResponse);
+      return true;
+    });
+  } catch (e) {
+    console.error('Failed to add message listener:', e);
+    isContextValid = false;
+  }
 
   console.log('Content script initialized');
 
+  function isExtensionContextValid() {
+    return typeof chrome !== 'undefined' && 
+           chrome.runtime && 
+           chrome.runtime.id &&
+           isContextValid;
+  }
+
   async function loadConfig() {
+    if (!isExtensionContextValid()) {
+      console.log('Extension context not available');
+      return;
+    }
+    
     try {
-      // 检查扩展上下文是否有效
-      if (!chrome.runtime || !chrome.runtime.id) {
-        console.log('Extension context not available, skipping config load');
-        return;
-      }
-      
       const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
-      if (response.success) {
+      if (response && response.success) {
         config = response.data;
         textProcessor.wordThreshold = config.wordThreshold;
       }
     } catch (error) {
-      // 忽略"Extension context invalidated"错误
       if (error.message && error.message.includes('Extension context invalidated')) {
-        console.log('Extension context invalidated, will retry on next focus');
+        console.log('Extension context invalidated');
+        isContextValid = false;
       } else {
         console.error('Failed to load config:', error);
       }
@@ -61,6 +73,10 @@ function initContentScript() {
   function bindEvents() {
     // 鼠标释放时检测划词
     document.addEventListener('mouseup', (e) => {
+      if (!isExtensionContextValid()) {
+        console.log('Extension context invalid, skipping selection');
+        return;
+      }
       if (config?.autoTranslate !== false) {
         setTimeout(() => handleSelection(e), 10);
       }
@@ -82,10 +98,19 @@ function initContentScript() {
     });
 
     // 监听配置变化
-    window.addEventListener('focus', loadConfig);
+    window.addEventListener('focus', () => {
+      if (isExtensionContextValid()) {
+        loadConfig();
+      }
+    });
   }
 
   function handleMessage(request, sender, sendResponse) {
+    if (!isExtensionContextValid()) {
+      sendResponse({ success: false, error: 'Extension context invalid' });
+      return;
+    }
+    
     switch (request.action) {
       case 'triggerTranslate':
         triggerTranslate();
@@ -97,6 +122,11 @@ function initContentScript() {
   }
 
   function handleSelection(e) {
+    if (!isExtensionContextValid()) {
+      console.log('Extension context invalid');
+      return;
+    }
+    
     const selection = window.getSelection();
     const result = textProcessor.analyzeSelection(selection);
     
@@ -114,6 +144,11 @@ function initContentScript() {
   }
 
   function triggerTranslate() {
+    if (!isExtensionContextValid()) {
+      console.log('Extension context invalid');
+      return;
+    }
+    
     const selection = window.getSelection();
     const result = textProcessor.analyzeSelection(selection);
     
