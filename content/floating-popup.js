@@ -23,21 +23,21 @@ class FloatingPopup {
     this.element.className = 'llm-translator-popup';
     this.element.style.display = 'none';
     this.element.innerHTML = `
-      <div class="popup-header">
-        <span class="original-text"></span>
-        <button class="speak-btn" title="朗读原文">🔊</button>
+      <button class="close-btn" title="关闭" style="position: absolute; top: 8px; right: 8px; background: #f0f0f0; border: none; font-size: 18px; color: #666; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 4px; z-index: 10;">&times;</button>
+      <div class="popup-header" style="display: flex; align-items: center; justify-content: space-between; padding-right: 40px; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+        <span class="original-text" style="font-weight: 600; font-size: 16px; color: #333; flex: 1;"></span>
+        <button class="speak-btn" title="朗读原文" style="background: #e8f5e9; border: none; cursor: pointer; font-size: 16px; padding: 6px 10px; border-radius: 4px; margin-left: 10px; transition: background 0.2s;">🔊</button>
       </div>
-      <div class="phonetic" style="color: #666; font-family: serif; margin: 5px 0;"></div>
+      <div class="phonetic" style="color: #666; font-family: serif; margin: 5px 0; font-size: 14px;"></div>
       <div class="translation-content">
-        <div class="loading">翻译中...</div>
+        <div class="loading" style="color: #999; text-align: center; padding: 16px;">翻译中...</div>
         <div class="translation-result" style="display: none;">
-          <div class="meaning" style="color: #2c5282; font-size: 15px; margin: 10px 0;"></div>
+          <div class="meaning" style="color: #2c5282; font-size: 15px; margin: 10px 0; line-height: 1.5;"></div>
           <div class="example" style="color: #666; font-size: 13px; font-style: italic; padding: 8px; background: #f7f7f7; border-radius: 4px; border-left: 3px solid #4CAF50; margin: 10px 0;"></div>
         </div>
         <div class="error-message" style="color: #e53e3e; text-align: center; padding: 16px;"></div>
       </div>
-      <button class="speak-translation-btn" title="朗读译文" style="display: none; background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 8px;">🔊 朗读译文</button>
-      <button class="close-btn" title="关闭" style="position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 20px; color: #999; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">&times;</button>
+      <button class="speak-translation-btn" title="朗读译文" style="display: none; background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 12px; width: 100%;">🔊 朗读译文</button>
     `;
 
     this.element.querySelector('.close-btn').addEventListener('click', () => this.hide());
