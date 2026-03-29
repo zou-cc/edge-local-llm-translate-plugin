@@ -33,64 +33,6 @@
   <button id="saveBtn" class="btn-primary">保存设置</button>
   <div id="saveStatus" class="status"></div>
 
-  <script>
-    // 加载配置
-    chrome.runtime.sendMessage({action: 'getConfig'}).then(r => {
-      if (r.success && r.data) {
-        document.getElementById('apiUrl').value = r.data.apiUrl || 'http://localhost:11434';
-        document.getElementById('modelName').value = r.data.modelName || 'qwen3.5:35b';
-      }
-    }).catch(console.error);
-    
-    // 测试连接
-    document.getElementById('testBtn').addEventListener('click', async () => {
-      const statusEl = document.getElementById('connectionStatus');
-      statusEl.textContent = '测试中...';
-      
-      try {
-        const response = await chrome.runtime.sendMessage({action: 'testConnection'});
-        if (response.success && response.connected) {
-          statusEl.textContent = '✓ 连接成功';
-          statusEl.className = 'status success';
-        } else {
-          statusEl.textContent = '✗ 连接失败';
-          statusEl.className = 'status error';
-        }
-      } catch (error) {
-        statusEl.textContent = '错误: ' + error.message;
-        statusEl.className = 'status error';
-      }
-    });
-    
-    // 保存配置
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      const config = {
-        engineType: 'ollama',
-        apiUrl: document.getElementById('apiUrl').value.trim(),
-        modelName: document.getElementById('modelName').value.trim(),
-        targetLanguage: '中文',
-        ttsRate: 1.0,
-        sourceLanguages: ['英文'],
-        autoTranslate: true,
-        wordThreshold: 20
-      };
-      
-      try {
-        const response = await chrome.runtime.sendMessage({action: 'setConfig', config});
-        const statusEl = document.getElementById('saveStatus');
-        if (response.success) {
-          statusEl.textContent = '保存成功!';
-          statusEl.className = 'status success';
-        } else {
-          statusEl.textContent = '保存失败';
-          statusEl.className = 'status error';
-        }
-        setTimeout(() => statusEl.textContent = '', 3000);
-      } catch (error) {
-        document.getElementById('saveStatus').textContent = '错误: ' + error.message;
-        document.getElementById('saveStatus').className = 'status error';
-      }
-    });
-  </script>
+  <script src="popup.js"></script>
 </body>
 </html>
