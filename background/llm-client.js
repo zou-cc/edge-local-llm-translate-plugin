@@ -116,16 +116,33 @@ class LLMClient {
   async testConnection() {
     try {
       const engineConfig = await configManager.getEngineConfig();
-      const { apiUrl, engineType } = engineConfig;
+      const { apiUrl, engineType, modelName } = engineConfig;
       
-      // 尝试简单的连接测试
-      const testUrl = engineType === ENGINE_TYPES.OLLAMA 
-        ? `${apiUrl}/api/tags`
-        : `${apiUrl}/v1/models`;
-      
-      const response = await fetch(testUrl, { method: 'GET' });
-      return response.ok;
+      // 对于Ollama，尝试使用OpenAI兼容端点进行简单测试
+      if (engineType === ENGINE_TYPES.OLLAMA) {
+        try {
+          // 尝试使用/generate端点进行简单测试
+          const response = await fetch(`${apiUrl}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: modelName,
+              prompt: 'hi',
+              stream: false
+            })
+          });
+          return response.ok;
+        } catch (e) {
+          // 如果失败，尝试/tags端点
+          const response = await fetch(`${apiUrl}/api/tags`, { method: 'GET' });
+          return response.ok;
+        }
+      } else {
+        const response = await fetch(`${apiUrl}/v1/models`, { method: 'GET' });
+        return response.ok;
+      }
     } catch (error) {
+      console.error('Test connection error:', error);
       return false;
     }
   }

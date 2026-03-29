@@ -1,6 +1,19 @@
 // sidepanel/sidepanel.js
-import { ttsManager } from '../shared/tts.js';
-import { LANGUAGES } from '../shared/constants.js';
+
+const LANGUAGES = [
+  { code: 'en', name: '英文' },
+  { code: 'zh', name: '中文' },
+  { code: 'ja', name: '日文' },
+  { code: 'ko', name: '韩文' },
+  { code: 'fr', name: '法文' },
+  { code: 'de', name: '德文' },
+  { code: 'es', name: '西班牙文' },
+  { code: 'ru', name: '俄文' }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  new SidePanel();
+});
 
 class SidePanel {
   constructor() {
@@ -15,7 +28,6 @@ class SidePanel {
     this.bindEvents();
     this.checkForPendingTranslation();
 
-    // 监听来自content script的消息
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       this.handleMessage(request, sender, sendResponse);
       return true;
@@ -28,7 +40,6 @@ class SidePanel {
     document.getElementById('speakTranslationBtn').addEventListener('click', () => this.speakTranslation());
     document.getElementById('copyBtn').addEventListener('click', () => this.copyTranslation());
     document.getElementById('retryBtn').addEventListener('click', () => this.retry());
-    document.getElementById('errorRetryBtn').addEventListener('click', () => this.retry());
   }
 
   async loadConfig() {
@@ -68,11 +79,7 @@ class SidePanel {
   translate(text) {
     this.currentText = text;
     this.translationText = null;
-
-    // 显示加载状态
     this.showLoading();
-
-    // 请求翻译
     this.requestTranslation(text);
   }
 
@@ -86,7 +93,8 @@ class SidePanel {
       });
 
       if (response.success) {
-        this.showResult(text, response.data.translation || response.data);
+        const translation = response.data.translation || response.data;
+        this.showResult(text, translation);
       } else {
         this.showError(response.error || '翻译失败');
       }
@@ -104,10 +112,8 @@ class SidePanel {
 
   showResult(original, translation) {
     this.translationText = translation;
-
     document.getElementById('originalText').textContent = original;
     document.getElementById('translationText').textContent = translation;
-
     document.getElementById('loading').style.display = 'none';
     document.getElementById('result').style.display = 'block';
     document.getElementById('error').style.display = 'none';
@@ -124,11 +130,10 @@ class SidePanel {
 
   async speakOriginal() {
     if (!this.currentText) return;
-    
     try {
-      await ttsManager.speak(this.currentText, {
-        rate: this.config?.ttsRate || 1.0
-      });
+      const utterance = new SpeechSynthesisUtterance(this.currentText);
+      utterance.rate = this.config?.ttsRate || 1.0;
+      speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('TTS error:', error);
     }
@@ -136,34 +141,25 @@ class SidePanel {
 
   async speakTranslation() {
     if (!this.translationText) return;
-    
     try {
-      const langCode = this.getLangCode(this.config?.targetLanguage);
-      await ttsManager.speak(this.translationText, {
-        lang: langCode,
-        rate: this.config?.ttsRate || 1.0
-      });
+      const lang = LANGUAGES.find(l => l.name === this.config?.targetLanguage);
+      const utterance = new SpeechSynthesisUtterance(this.translationText);
+      utterance.lang = lang ? lang.code : 'zh';
+      utterance.rate = this.config?.ttsRate || 1.0;
+      speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('TTS error:', error);
     }
   }
 
-  getLangCode(langName) {
-    const lang = LANGUAGES.find(l => l.name === langName);
-    return lang ? lang.code : 'zh';
-  }
-
   async copyTranslation() {
     if (!this.translationText) return;
-    
     try {
       await navigator.clipboard.writeText(this.translationText);
       const btn = document.getElementById('copyBtn');
       const originalText = btn.textContent;
       btn.textContent = '已复制!';
-      setTimeout(() => {
-        btn.textContent = originalText;
-      }, 2000);
+      setTimeout(() => btn.textContent = originalText, 2000);
     } catch (error) {
       console.error('Copy failed:', error);
     }
@@ -179,6 +175,3 @@ class SidePanel {
     window.close();
   }
 }
-
-// 初始化
-new SidePanel();

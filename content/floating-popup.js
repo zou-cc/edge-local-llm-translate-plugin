@@ -1,12 +1,10 @@
 // content/floating-popup.js
-import { ttsManager } from '../shared/tts.js';
-import { LANGUAGES } from '../shared/constants.js';
 
-export class FloatingPopup {
+class FloatingPopup {
   constructor() {
     this.element = null;
     this.currentText = null;
-    this.isTranslating = false;
+    this.translationText = null;
     this.config = null;
     this.createElement();
   }
@@ -34,7 +32,6 @@ export class FloatingPopup {
       <button class="close-btn" title="关闭">&times;</button>
     `;
 
-    // 绑定事件
     this.element.querySelector('.close-btn').addEventListener('click', () => this.hide());
     this.element.querySelector('.speak-btn').addEventListener('click', () => this.speakOriginal());
     this.element.querySelector('.speak-translation-btn').addEventListener('click', () => this.speakTranslation());
@@ -44,9 +41,7 @@ export class FloatingPopup {
 
   async show(text, position) {
     this.currentText = text;
-    this.isTranslating = true;
-
-    // 显示原文
+    
     this.element.querySelector('.original-text').textContent = text;
     this.element.querySelector('.phonetic').textContent = '';
     this.element.querySelector('.loading').style.display = 'block';
@@ -54,14 +49,10 @@ export class FloatingPopup {
     this.element.querySelector('.error-message').style.display = 'none';
     this.element.querySelector('.speak-translation-btn').style.display = 'none';
 
-    // 定位
     this.positionAt(position);
     this.element.style.display = 'block';
 
-    // 加载配置
     await this.loadConfig();
-
-    // 请求翻译
     this.requestTranslation(text);
   }
 
@@ -72,7 +63,6 @@ export class FloatingPopup {
     let left = position.viewportX - popupWidth / 2;
     let top = position.viewportY + 10;
 
-    // 边界检查
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -85,8 +75,8 @@ export class FloatingPopup {
       top = position.viewportY - popupHeight - 10;
     }
 
-    this.element.style.left = `${left + window.scrollX}px`;
-    this.element.style.top = `${top + window.scrollY}px`;
+    this.element.style.left = left + 'px';
+    this.element.style.top = top + 'px';
   }
 
   async loadConfig() {
@@ -120,24 +110,19 @@ export class FloatingPopup {
       this.element.querySelector('.loading').style.display = 'none';
       this.displayError('翻译服务异常');
     }
-
-    this.isTranslating = false;
   }
 
   displayResult(data) {
     const resultEl = this.element.querySelector('.translation-result');
     
-    // 显示音标
     if (data.phonetic) {
       this.element.querySelector('.phonetic').textContent = data.phonetic;
     }
 
-    // 显示释义
     if (data.meaning) {
       this.element.querySelector('.meaning').textContent = data.meaning;
     }
 
-    // 显示例句
     const exampleEl = this.element.querySelector('.example');
     if (data.example) {
       exampleEl.textContent = data.example;
@@ -149,7 +134,6 @@ export class FloatingPopup {
     resultEl.style.display = 'block';
     this.element.querySelector('.speak-translation-btn').style.display = 'inline-block';
     
-    // 保存译文用于朗读
     this.translationText = data.meaning;
   }
 
@@ -161,11 +145,10 @@ export class FloatingPopup {
 
   async speakOriginal() {
     if (!this.currentText) return;
-    
     try {
-      await ttsManager.speak(this.currentText, {
-        rate: this.config?.ttsRate || 1.0
-      });
+      const utterance = new SpeechSynthesisUtterance(this.currentText);
+      utterance.rate = this.config?.ttsRate || 1.0;
+      speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('TTS error:', error);
     }
@@ -173,22 +156,13 @@ export class FloatingPopup {
 
   async speakTranslation() {
     if (!this.translationText) return;
-    
     try {
-      // 获取目标语言代码
-      const langCode = this.getLangCode(this.config?.targetLanguage);
-      await ttsManager.speak(this.translationText, {
-        lang: langCode,
-        rate: this.config?.ttsRate || 1.0
-      });
+      const utterance = new SpeechSynthesisUtterance(this.translationText);
+      utterance.rate = this.config?.ttsRate || 1.0;
+      speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('TTS error:', error);
     }
-  }
-
-  getLangCode(langName) {
-    const lang = LANGUAGES.find(l => l.name === langName);
-    return lang ? lang.code : 'zh';
   }
 
   hide() {
@@ -201,5 +175,3 @@ export class FloatingPopup {
     return this.element && this.element.contains(element);
   }
 }
-
-export default FloatingPopup;

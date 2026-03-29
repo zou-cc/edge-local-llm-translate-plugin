@@ -1,80 +1,83 @@
 // content/content.js
-import { TextProcessor } from './text-processor.js';
-import { FloatingPopup } from './floating-popup.js';
-import { SidebarManager } from './sidebar.js';
 
-class ContentScript {
-  constructor() {
-    this.textProcessor = new TextProcessor();
-    this.floatingPopup = new FloatingPopup();
-    this.sidebarManager = new SidebarManager();
-    this.config = null;
-    this.lastSelection = null;
-    
-    this.init();
+// 等待DOM加载
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initContentScript);
+} else {
+  initContentScript();
+}
+
+function initContentScript() {
+  console.log('Content script initializing...');
+  
+  // 检查chrome.runtime是否可用
+  if (typeof chrome === 'undefined' || !chrome.runtime) {
+    console.error('Extension context not available');
+    return;
   }
+  
+  const textProcessor = new TextProcessor();
+  const floatingPopup = new FloatingPopup();
+  const sidebarManager = new SidebarManager();
+  let config = null;
 
-  async init() {
-    // 加载配置
-    await this.loadConfig();
-    
-    // 绑定事件
-    this.bindEvents();
-    
-    // 监听来自background的消息
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      this.handleMessage(request, sender, sendResponse);
-      return true;
-    });
-    
-    console.log('Content script initialized');
-  }
+  // 加载配置
+  loadConfig();
 
-  async loadConfig() {
+  // 绑定事件
+  bindEvents();
+
+  // 监听来自background的消息
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    handleMessage(request, sender, sendResponse);
+    return true;
+  });
+
+  console.log('Content script initialized');
+
+  async function loadConfig() {
     try {
       const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
       if (response.success) {
-        this.config = response.data;
-        this.textProcessor.wordThreshold = this.config.wordThreshold;
+        config = response.data;
+        textProcessor.wordThreshold = config.wordThreshold;
       }
     } catch (error) {
       console.error('Failed to load config:', error);
     }
   }
 
-  bindEvents() {
+  function bindEvents() {
     // 鼠标释放时检测划词
     document.addEventListener('mouseup', (e) => {
-      if (this.config?.autoTranslate !== false) {
-        setTimeout(() => this.handleSelection(e), 10);
+      if (config?.autoTranslate !== false) {
+        setTimeout(() => handleSelection(e), 10);
       }
     });
 
     // 点击空白处关闭弹窗
     document.addEventListener('mousedown', (e) => {
-      if (!this.floatingPopup.contains(e.target)) {
-        this.floatingPopup.hide();
+      if (!floatingPopup.contains(e.target)) {
+        floatingPopup.hide();
       }
     });
 
     // ESC键关闭
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        this.floatingPopup.hide();
-        this.sidebarManager.close();
+        floatingPopup.hide();
+        sidebarManager.close();
       }
     });
 
     // 监听配置变化
-    window.addEventListener('focus', () => {
-      this.loadConfig();
-    });
+    window.addEventListener('focus', loadConfig);
   }
 
-  handleMessage(request, sender, sendResponse) {
+  function handleMessage(request, sender, sendResponse) {
     switch (request.action) {
       case 'triggerTranslate':
-        this.triggerTranslate();
+        triggerTranslate();
         sendResponse({ success: true });
         break;
       default:
@@ -82,42 +85,33 @@ class ContentScript {
     }
   }
 
-  handleSelection(e) {
+  function handleSelection(e) {
     const selection = window.getSelection();
-    const result = this.textProcessor.analyzeSelection(selection);
+    const result = textProcessor.analyzeSelection(selection);
     
     if (!result) {
-      this.floatingPopup.hide();
+      floatingPopup.hide();
       return;
     }
 
-    this.lastSelection = result;
-
     if (result.isWord) {
-      // 显示悬浮弹窗
-      this.floatingPopup.show(result.text, result.position);
+      floatingPopup.show(result.text, result.position);
     } else {
-      // 打开侧边栏
-      this.sidebarManager.open(result.text);
-      this.floatingPopup.hide();
+      sidebarManager.open(result.text);
+      floatingPopup.hide();
     }
   }
 
-  triggerTranslate() {
+  function triggerTranslate() {
     const selection = window.getSelection();
-    const result = this.textProcessor.analyzeSelection(selection);
+    const result = textProcessor.analyzeSelection(selection);
     
     if (!result) return;
 
-    this.lastSelection = result;
-
     if (result.isWord) {
-      this.floatingPopup.show(result.text, result.position);
+      floatingPopup.show(result.text, result.position);
     } else {
-      this.sidebarManager.open(result.text);
+      sidebarManager.open(result.text);
     }
   }
 }
-
-// 初始化
-new ContentScript();

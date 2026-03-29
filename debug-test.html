@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>调试测试</title>
+</head>
+<body>
+  <h1>Ollama连接测试</h1>
+  <button id="testDirect">直接测试Ollama</button>
+  <button id="testRuntime">测试扩展后台</button>
+  <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+  
+  <script>
+    const resultDiv = document.getElementById('result');
+    
+    document.getElementById('testDirect').addEventListener('click', async () => {
+      resultDiv.innerHTML = '直接测试Ollama...';
+      try {
+        const response = await fetch('http://localhost:11434/api/tags');
+        const data = await response.json();
+        resultDiv.innerHTML = '<b style="color: green;">成功!</b><br>' + JSON.stringify(data, null, 2);
+      } catch (error) {
+        resultDiv.innerHTML = '<b style="color: red;">失败:</b> ' + error.message;
+      }
+    });
+    
+    document.getElementById('testRuntime').addEventListener('click', async () => {
+      resultDiv.innerHTML = '测试扩展后台通信...';
+      try {
+        const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
+        resultDiv.innerHTML = '<b style="color: green;">后台通信成功!</b><br>' + JSON.stringify(response, null, 2);
+      } catch (error) {
+        resultDiv.innerHTML = '<b style="color: red;">后台通信失败:</b> ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html>
