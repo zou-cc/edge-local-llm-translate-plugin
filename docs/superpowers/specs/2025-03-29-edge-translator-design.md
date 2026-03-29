@@ -123,6 +123,10 @@ edge-local-llm-translate-plugin/
 
 ### 3.3 侧边栏（句子）
 
+**实现方式**: 使用 **Chrome Side Panel API** (chrome.sidePanel)
+- 理由：提供原生侧边栏体验，支持跨标签页保持状态
+- Fallback：如API不可用，使用content script注入的DOM覆盖层
+
 **布局**:
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -145,19 +149,23 @@ edge-local-llm-translate-plugin/
 - 可调整宽度
 - 点击关闭按钮或ESC键关闭
 - 复制按钮可复制译文
+- 权限要求: `sidePanel` permission in manifest.json
 
 ### 3.4 LLM引擎适配
 
-**统一接口**: 使用OpenAI兼容格式
+**接口策略**: 
+- 优先使用OpenAI兼容格式 (`/v1/chat/completions`)
+- Ollama同时支持原生格式 (`/api/generate`) 作为fallback
+- 所有引擎统一封装为`chat.completions.create()`接口
 
 **支持的引擎**:
 
-| 引擎 | 默认地址 | 特点 |
-|------|----------|------|
-| Ollama | http://localhost:11434 | 本地运行，模型丰富 |
-| vLLM | http://localhost:8000 | 高性能推理 |
-| LMStudio | http://localhost:1234 | 图形化管理 |
-| LiteLLM | 可配置 | 统一多模型网关 |
+| 引擎 | 默认地址 | API格式 | 特点 |
+|------|----------|---------|------|
+| Ollama | http://localhost:11434 | `/v1/chat/completions` 或 `/api/generate` | 本地运行，模型丰富 |
+| vLLM | http://localhost:8000 | `/v1/chat/completions` | 高性能推理 |
+| LMStudio | http://localhost:1234 | `/v1/chat/completions` | 图形化管理 |
+| LiteLLM | 可配置 | `/v1/chat/completions` | 统一多模型网关 |
 
 **翻译Prompt模板**:
 
@@ -181,6 +189,12 @@ edge-local-llm-translate-plugin/
 
 翻译：
 ```
+
+**响应解析策略**:
+- **JSON模式**: 优先使用模型的JSON输出能力，要求按固定格式返回
+- **Fallback**: 非JSON响应使用正则表达式提取关键信息
+- **音标提取**: 从响应中匹配 `/.../` 格式的IPA音标
+- **容错处理**: 如果LLM未按格式返回，直接显示原始响应
 
 ### 3.5 语音朗读(TTS)
 
@@ -233,6 +247,12 @@ edge-local-llm-translate-plugin/
 使用Chrome Storage API:
 - `chrome.storage.sync`: 用户配置（跨设备同步）
 - `chrome.storage.local`: 缓存数据（翻译结果缓存）
+
+**缓存策略**:
+- **最大条目数**: 1000条
+- **过期时间**: 7天
+- **淘汰策略**: LRU (Least Recently Used)
+- **键名格式**: `cache:{md5(text+sourceLang+targetLang)}`
 
 ---
 
@@ -325,7 +345,20 @@ edge-local-llm-translate-plugin/
 
 ### A. API请求示例
 
-**Ollama请求**:
+**标准接口** (OpenAI兼容格式，所有引擎通用):
+```json
+POST http://localhost:11434/v1/chat/completions
+{
+  "model": "qwen2.5:7b",
+  "messages": [
+    {"role": "system", "content": "你是翻译助手"},
+    {"role": "user", "content": "翻译：hello"}
+  ],
+  "temperature": 0.3
+}
+```
+
+**Ollama原生接口** (仅作为fallback):
 ```json
 POST http://localhost:11434/api/generate
 {
@@ -335,17 +368,10 @@ POST http://localhost:11434/api/generate
 }
 ```
 
-**OpenAI兼容请求**:
-```json
-POST http://localhost:11434/v1/chat/completions
-{
-  "model": "qwen2.5:7b",
-  "messages": [
-    {"role": "system", "content": "你是翻译助手"},
-    {"role": "user", "content": "翻译：hello"}
-  ]
-}
-```
+**API格式选择策略**:
+1. 默认使用OpenAI兼容格式 (`/v1/chat/completions`)
+2. 如果收到404错误且引擎为Ollama，自动fallback到原生格式
+3. 适配器层封装差异，上层代码统一调用
 
 ### B. 文件清单
 
