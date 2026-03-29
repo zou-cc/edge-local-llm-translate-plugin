@@ -4,7 +4,7 @@ import { ENGINE_TYPES, PROMPT_TEMPLATES } from '../shared/constants.js';
 
 class LLMClient {
   constructor() {
-    this.timeout = 30000; // 30秒超时
+    this.timeout = 120000; // 增加到 120 秒（2分钟）
   }
 
   async translate(text, isWord, targetLang) {
@@ -84,6 +84,9 @@ class LLMClient {
   }
 
   async callOllamaNative(apiUrl, modelName, prompt) {
+    console.log('Calling Ollama with model:', modelName);
+    console.log('Prompt:', prompt.substring(0, 50) + '...');
+    
     const url = `${apiUrl}/api/generate`;
     
     const response = await this.fetchWithTimeout(url, {
@@ -99,16 +102,23 @@ class LLMClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama native API error: ${response.status}`);
+      if (response.status === 404) {
+        throw new Error(`模型 ${modelName} 不存在，请运行: ollama pull ${modelName}`);
+      }
+      throw new Error(`Ollama API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Ollama response received');
     return data.response;
   }
 
   fetchWithTimeout(url, options) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    const timeoutId = setTimeout(() => {
+      console.log('Request timeout, aborting...');
+      controller.abort();
+    }, this.timeout);
     
     return fetch(url, { ...options, signal: controller.signal })
       .finally(() => clearTimeout(timeoutId));
@@ -119,24 +129,23 @@ class LLMClient {
       const engineConfig = await configManager.getEngineConfig();
       const { apiUrl, engineType, modelName } = engineConfig;
       
-      // 对于Ollama，尝试使用OpenAI兼容端点进行简单测试
+      // 对于Ollama，尝试使用原生API进行简单测试
       if (engineType === ENGINE_TYPES.OLLAMA) {
         try {
-          // 尝试使用/generate端点进行简单测试
-          const response = await fetch(`${apiUrl}/api/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: modelName,
-              prompt: 'hi',
-              stream: false
-            })
-          });
-          return response.ok;
-        } catch (e) {
-          // 如果失败，尝试/tags端点
+          // 尝试简单的模型列表查询
           const response = await fetch(`${apiUrl}/api/tags`, { method: 'GET' });
-          return response.ok;
+          if (response.ok) {
+            const data = await response.json();
+            // 检查模型是否存在
+            const hasModel = data.models && data.models.some(m => m.name === modelName);
+            if (!hasModel) {
+              console.warn(`模型 ${modelName} 未找到，可用模型:`, data.models.map(m => m.name));
+            }
+            return response.ok;
+          }
+          return false;
+        } catch (e) {
+          return false;
         }
       } else {
         const response = await fetch(`${apiUrl}/v1/models`, { method: 'GET' });
