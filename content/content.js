@@ -1,55 +1,48 @@
-// content/content.js - Debug version with detailed logging
+// content/content.js
 
 console.log('=== CONTENT SCRIPT STARTED ===');
+
+const textProcessor = new TextProcessor();
+const floatingPopup = new FloatingPopup();
+const sidebarManager = new SidebarManager();
 
 document.addEventListener('mouseup', async function() {
   console.log('Mouse up!');
   
   setTimeout(async function() {
-    const text = window.getSelection().toString().trim();
-    console.log('Selected:', text);
+    const selection = window.getSelection();
+    const text = selection.toString().trim();
+    
+    console.log('Selected:', text.substring(0, 50));
     
     if (text.length < 2) {
       console.log('Too short');
       return;
     }
     
-    const shortText = text.substring(0, 50);
-    console.log('Translating:', shortText);
+    const result = textProcessor.analyzeSelection(selection);
+    console.log('Analysis result:', result);
     
-    try {
-      console.log('Sending request to background...');
-      
-      const response = await chrome.runtime.sendMessage({
-        action: 'translate',
-        text: shortText,
-        isWord: shortText.length < 20 && !shortText.includes(' '),
-        targetLang: '中文'
-      });
-      
-      console.log('Full response:', JSON.stringify(response, null, 2));
-      
-      if (response && response.success) {
-        console.log('Data received:', response.data);
-        const meaning = response.data?.meaning;
-        const translation = response.data?.translation;
-        const raw = response.data?.raw;
-        
-        console.log('Meaning:', meaning);
-        console.log('Translation:', translation);
-        console.log('Raw:', raw?.substring(0, 200));
-        
-        const result = meaning || translation || raw || '无翻译结果';
-        alert('翻译结果: ' + result.substring(0, 100));
-      } else {
-        console.error('Failed:', response);
-        alert('翻译失败: ' + (response?.error || '未知错误'));
-      }
-    } catch (e) {
-      console.error('Error:', e);
-      alert('错误: ' + e.message);
+    if (result) {
+      console.log('Showing popup...');
+      floatingPopup.show(result.text, result.position);
     }
   }, 100);
+});
+
+// 点击空白处关闭
+document.addEventListener('mousedown', function(e) {
+  if (!floatingPopup.contains(e.target)) {
+    floatingPopup.hide();
+  }
+});
+
+// ESC 键关闭
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    floatingPopup.hide();
+    sidebarManager.close();
+  }
 });
 
 console.log('=== READY ===');
