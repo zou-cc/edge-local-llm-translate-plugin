@@ -1,0 +1,21 @@
+<!-- content/floating-popup.html -->
+<!-- HTML Template for Floating Popup Component -->
+<!-- This template is embedded in floating-popup.js and rendered dynamically -->
+
+<div class="llm-translator-popup" id="llm-translator-popup">
+  <div class="popup-header">
+    <span class="original-text"></span>
+    <button class="speak-btn" title="朗读原文">🔊</button>
+  </div>
+  <div class="phonetic"></div>
+  <div class="translation-content">
+    <div class="loading">翻译中...</div>
+    <div class="translation-result" style="display: none;">
+      <div class="meaning"></div>
+      <div class="example"></div>
+    </div>
+    <div class="error-message" style="display: none;"></div>
+  </div>
+  <button class="speak-translation-btn" title="朗读译文" style="display: none;">🔊 朗读译文</button>
+  <button class="close-btn" title="关闭">&times;</button>
+</div>
