@@ -45,16 +45,16 @@ export const CACHE_CONFIG = {
 };
 
 export const PROMPT_TEMPLATES = {
-  word: (word, targetLang) => `请翻译以下单词，并提供音标。
-格式要求：
-- 音标：/音标/
-- 释义：${targetLang}释义
-- 例句：一个英文例句（${targetLang}翻译）
+  word: (word, targetLang) => `请直接翻译以下单词，不要思考过程，只输出结果。
 
 单词：${word}
-目标语言：${targetLang}`,
 
-  sentence: (text, targetLang) => `请将以下文本翻译成${targetLang}，保持原文的语气和风格。
+请按以下格式回复（不要有多余内容）：
+音标：/音标符号/
+释义：${targetLang}意思
+例句：一句英文例句（${targetLang}翻译）`,
+
+  sentence: (text, targetLang) => `请将以下文本直接翻译成${targetLang}，不要思考过程，只输出翻译结果。
 
 原文：${text}
 

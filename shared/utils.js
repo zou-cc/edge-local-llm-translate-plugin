@@ -37,13 +37,25 @@ export function parseWordTranslation(response) {
   
   // 提取释义（在"释义："之后的内容）
   const meaningMatch = response.match(/释义[：:]\s*(.+)/);
-  const meaning = meaningMatch ? meaningMatch[1].trim() : response;
+  let meaning;
+  if (meaningMatch) {
+    meaning = meaningMatch[1].trim();
+  } else {
+    // 如果没有"释义："标记，尝试提取"翻译："之后的内容
+    const translateMatch = response.match(/翻译[：:]\s*(.+)/);
+    if (translateMatch) {
+      meaning = translateMatch[1].trim();
+    } else {
+      // 如果都没有，使用整个响应（去除空行）
+      meaning = response.trim().split('\n')[0].trim();
+    }
+  }
   
   // 提取例句
   const exampleMatch = response.match(/例句[：:]\s*(.+)/);
   const example = exampleMatch ? exampleMatch[1].trim() : null;
   
-  return { phonetic, meaning, example, raw: response };
+  return { phonetic, meaning, example || null, raw: response };
 }
 
 /**
