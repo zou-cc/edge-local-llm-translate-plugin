@@ -31,7 +31,12 @@ class LLMClient {
   async callLLM(config, prompt) {
     const { apiUrl, apiPath, modelName, engineType } = config;
     
-    // 优先使用OpenAI兼容格式
+    // Ollama 直接使用原生 API 避免 CORS 问题
+    if (engineType === ENGINE_TYPES.OLLAMA) {
+      return await this.callOllamaNative(apiUrl, modelName, prompt);
+    }
+    
+    // 其他引擎使用 OpenAI 兼容格式
     let url = `${apiUrl}${apiPath}`;
     let body = this.buildOpenAIRequest(modelName, prompt);
     
@@ -45,10 +50,6 @@ class LLMClient {
       });
 
       if (!response.ok) {
-        // 如果是Ollama且返回404，尝试原生格式
-        if (engineType === ENGINE_TYPES.OLLAMA && response.status === 404) {
-          return await this.callOllamaNative(apiUrl, modelName, prompt);
-        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
