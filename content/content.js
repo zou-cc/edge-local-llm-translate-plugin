@@ -138,8 +138,9 @@ function initContentScript() {
     if (result.isWord) {
       floatingPopup.show(result.text, result.position);
     } else {
+      // 长文本也使用弹窗（侧边栏可能不可用）
       sidebarManager.open(result.text);
-      floatingPopup.hide();
+      floatingPopup.show(result.text, result.position);
     }
   }
 
