@@ -27,17 +27,17 @@ class FloatingPopup {
         <span class="original-text"></span>
         <button class="speak-btn" title="朗读原文">🔊</button>
       </div>
-      <div class="phonetic"></div>
+      <div class="phonetic" style="color: #666; font-family: serif; margin: 5px 0;"></div>
       <div class="translation-content">
         <div class="loading">翻译中...</div>
         <div class="translation-result" style="display: none;">
-          <div class="meaning"></div>
-          <div class="example"></div>
+          <div class="meaning" style="color: #2c5282; font-size: 15px; margin: 10px 0;"></div>
+          <div class="example" style="color: #666; font-size: 13px; font-style: italic; padding: 8px; background: #f7f7f7; border-radius: 4px; border-left: 3px solid #4CAF50; margin: 10px 0;"></div>
         </div>
-        <div class="error-message" style="display: none;"></div>
+        <div class="error-message" style="color: #e53e3e; text-align: center; padding: 16px;"></div>
       </div>
-      <button class="speak-translation-btn" title="朗读译文" style="display: none;">🔊 朗读译文</button>
-      <button class="close-btn" title="关闭">&times;</button>
+      <button class="speak-translation-btn" title="朗读译文" style="display: none; background: #4CAF50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 8px;">🔊 朗读译文</button>
+      <button class="close-btn" title="关闭" style="position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 20px; color: #999; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">&times;</button>
     `;
 
     this.element.querySelector('.close-btn').addEventListener('click', () => this.hide());
@@ -93,18 +93,19 @@ class FloatingPopup {
   }
 
   async loadConfig() {
+    if (!this.isExtensionContextValid()) {
+      return;
+    }
+    
     try {
-      if (!chrome.runtime || !chrome.runtime.id) {
-        return;
-      }
-      
       const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
-      if (response.success) {
+      if (response && response.success) {
         this.config = response.data;
       }
     } catch (error) {
       if (error.message && error.message.includes('Extension context invalidated')) {
-        console.log('Extension context invalidated');
+        console.log('Extension context invalidated in popup');
+        this.isContextValid = false;
       } else {
         console.error('Failed to load config:', error);
       }
@@ -119,6 +120,7 @@ class FloatingPopup {
     }
     
     try {
+      console.log('Requesting translation for:', text);
       const response = await chrome.runtime.sendMessage({
         action: 'translate',
         text: text,
@@ -126,6 +128,7 @@ class FloatingPopup {
         targetLang: this.config?.targetLanguage || '中文'
       });
 
+      console.log('Translation response:', response);
       this.element.querySelector('.loading').style.display = 'none';
 
       if (response && response.success) {
@@ -134,29 +137,39 @@ class FloatingPopup {
         this.displayError(response?.error || '翻译失败');
       }
     } catch (error) {
+      console.error('Translation error:', error);
       this.element.querySelector('.loading').style.display = 'none';
       if (error.message && error.message.includes('Extension context invalidated')) {
         this.isContextValid = false;
         this.displayError('扩展已更新，请刷新页面');
       } else {
-        console.error('Translation error:', error);
         this.displayError('翻译服务异常: ' + error.message);
       }
     }
   }
 
   displayResult(data) {
-    const resultEl = this.element.querySelector('.translation-result');
+    console.log('Displaying result:', data);
     
-    if (data.phonetic) {
-      this.element.querySelector('.phonetic').textContent = data.phonetic;
-    }
-
-    if (data.meaning) {
-      this.element.querySelector('.meaning').textContent = data.meaning;
-    }
-
+    const resultEl = this.element.querySelector('.translation-result');
+    const meaningEl = this.element.querySelector('.meaning');
     const exampleEl = this.element.querySelector('.example');
+    const phoneticEl = this.element.querySelector('.phonetic');
+    
+    // 显示音标
+    if (data.phonetic) {
+      phoneticEl.textContent = data.phonetic;
+      phoneticEl.style.display = 'block';
+    } else {
+      phoneticEl.style.display = 'none';
+    }
+
+    // 显示释义（优先使用 meaning，否则使用 translation）
+    const translationText = data.meaning || data.translation || '无翻译结果';
+    meaningEl.textContent = translationText;
+    this.translationText = translationText;
+
+    // 显示例句
     if (data.example) {
       exampleEl.textContent = data.example;
       exampleEl.style.display = 'block';
@@ -164,13 +177,15 @@ class FloatingPopup {
       exampleEl.style.display = 'none';
     }
 
+    // 确保结果显示
     resultEl.style.display = 'block';
     this.element.querySelector('.speak-translation-btn').style.display = 'inline-block';
     
-    this.translationText = data.meaning;
+    console.log('Result displayed successfully');
   }
 
   displayError(message) {
+    console.error('Displaying error:', message);
     const errorEl = this.element.querySelector('.error-message');
     errorEl.textContent = message;
     errorEl.style.display = 'block';
