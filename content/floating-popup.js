@@ -192,10 +192,19 @@ class FloatingPopup {
   }
 
   async speakOriginal() {
-    if (!this.currentText) return;
+    console.log('Speaking original:', this.currentText);
+    if (!this.currentText) {
+      console.log('No original text available');
+      return;
+    }
     try {
       const utterance = new SpeechSynthesisUtterance(this.currentText);
       utterance.rate = this.config?.ttsRate || 1.0;
+      // 设置语言为英文
+      utterance.lang = 'en-US';
+      utterance.onstart = () => console.log('TTS started');
+      utterance.onend = () => console.log('TTS ended');
+      utterance.onerror = (e) => console.error('TTS error:', e);
       speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('TTS error:', error);
@@ -203,10 +212,19 @@ class FloatingPopup {
   }
 
   async speakTranslation() {
-    if (!this.translationText) return;
+    console.log('Speaking translation:', this.translationText);
+    if (!this.translationText) {
+      console.log('No translation text available');
+      return;
+    }
     try {
       const utterance = new SpeechSynthesisUtterance(this.translationText);
       utterance.rate = this.config?.ttsRate || 1.0;
+      // 设置语言为中文
+      utterance.lang = 'zh-CN';
+      utterance.onstart = () => console.log('TTS started');
+      utterance.onend = () => console.log('TTS ended');
+      utterance.onerror = (e) => console.error('TTS error:', e);
       speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('TTS error:', error);
