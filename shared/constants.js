@@ -10,13 +10,13 @@ export const ENGINE_TYPES = {
 export const DEFAULT_CONFIG = {
   engineType: ENGINE_TYPES.OLLAMA,
   apiUrl: 'http://localhost:11434',
-  modelName: 'qwen2.5:7b',
+  modelName: 'qwen3.5:9b',
   sourceLanguages: ['英文'],
   targetLanguage: '中文',
   ttsVoice: 'auto',
   ttsRate: 1.0,
   autoTranslate: true,
-  wordThreshold: 20,
+  wordThreshold: 50,
   hotkey: 'Alt+T'
 };
 
