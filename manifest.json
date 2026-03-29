@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
   "name": "本地LLM划词翻译",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "使用本地大模型进行划词翻译，支持单词音标和语音朗读",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "permissions": [
     "storage",
     "sidePanel",
