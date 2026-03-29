@@ -11,9 +11,11 @@
     button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; }
     .btn-primary { background: #4CAF50; color: white; width: 100%; }
     .btn-secondary { background: #ddd; }
+    .btn-test { background: #2196F3; color: white; margin-top: 10px; }
     .status { font-size: 11px; margin-left: 5px; }
     .success { color: green; }
     .error { color: red; }
+    .debug { background: #fff3cd; padding: 10px; margin-top: 10px; font-size: 11px; border-radius: 4px; max-height: 100px; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -24,15 +26,122 @@
     <input type="text" id="apiUrl" value="http://localhost:11434">
     
     <label>模型名称</label>
-    <input type="text" id="modelName" value="qwen3.5:35b">
+    <input type="text" id="modelName" value="qwen3.5:9b">
     
     <button id="testBtn" class="btn-secondary">测试连接</button>
     <span id="connectionStatus" class="status"></span>
+    
+    <button id="testTranslateBtn" class="btn-test">测试翻译 hello</button>
+    <span id="translateStatus" class="status"></span>
   </div>
   
   <button id="saveBtn" class="btn-primary">保存设置</button>
   <div id="saveStatus" class="status"></div>
+  
+  <div id="debugInfo" class="debug" style="display: none;"></div>
 
-  <script src="popup.js"></script>
+  <script>
+    // 加载配置
+    chrome.runtime.sendMessage({action: 'getConfig'}).then(r => {
+      if (r.success && r.data) {
+        document.getElementById('apiUrl').value = r.data.apiUrl || 'http://localhost:11434';
+        document.getElementById('modelName').value = r.data.modelName || 'qwen3.5:9b';
+      }
+    }).catch(console.error);
+    
+    function log(msg) {
+      const debugEl = document.getElementById('debugInfo');
+      debugEl.style.display = 'block';
+      debugEl.textContent += msg + '\n';
+    }
+    
+    // 测试连接
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('connectionStatus');
+      statusEl.textContent = '测试中...';
+      
+      try {
+        const response = await chrome.runtime.sendMessage({action: 'testConnection'});
+        if (response.success && response.connected) {
+          statusEl.textContent = '✓ 连接成功';
+          statusEl.className = 'status success';
+        } else {
+          statusEl.textContent = '✗ 连接失败';
+          statusEl.className = 'status error';
+        }
+      } catch (error) {
+        statusEl.textContent = '错误: ' + error.message;
+        statusEl.className = 'status error';
+      }
+    });
+    
+    // 测试翻译
+    document.getElementById('testTranslateBtn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('translateStatus');
+      const debugEl = document.getElementById('debugInfo');
+      statusEl.textContent = '翻译中...';
+      debugEl.style.display = 'block';
+      debugEl.textContent = '';
+      
+      log('开始测试翻译...');
+      
+      try {
+        log('发送翻译请求: hello');
+        const response = await chrome.runtime.sendMessage({
+          action: 'translate',
+          text: 'hello',
+          isWord: true,
+          targetLang: '中文'
+        });
+        
+        log('收到响应: ' + JSON.stringify(response).substring(0, 300));
+        
+        if (response.success) {
+          const translation = response.data.meaning || response.data.translation || '无结果';
+          statusEl.textContent = '翻译: ' + translation;
+          statusEl.className = 'status success';
+          log('翻译成功: ' + translation);
+        } else {
+          statusEl.textContent = '失败: ' + (response.error || '未知错误');
+          statusEl.className = 'status error';
+          log('翻译失败: ' + (response.error || '未知错误'));
+        }
+      } catch (error) {
+        statusEl.textContent = '错误: ' + error.message;
+        statusEl.className = 'status error';
+        log('错误: ' + error.message);
+      }
+    });
+    
+    // 保存配置
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const config = {
+        engineType: 'ollama',
+        apiUrl: document.getElementById('apiUrl').value.trim(),
+        modelName: document.getElementById('modelName').value.trim(),
+        targetLanguage: '中文',
+        ttsRate: 1.0,
+        sourceLanguages: ['英文'],
+        autoTranslate: true,
+        wordThreshold: 50
+      };
+      
+      try {
+        const response = await chrome.runtime.sendMessage({action: 'setConfig', config});
+        const statusEl = document.getElementById('saveStatus');
+        if (response.success) {
+          statusEl.textContent = '保存成功!';
+          statusEl.className = 'status success';
+        } else {
+          statusEl.textContent = '保存失败';
+          statusEl.className = 'status error';
+        }
+        setTimeout(() => statusEl.textContent = '', 3000);
+      } catch (error) {
+        document.getElementById('saveStatus').textContent = '错误: ' + error.message;
+        document.getElementById('saveStatus').className = 'status error';
+      }
+    });
+  </script>
 </body>
 </html>
