@@ -81,17 +81,30 @@ class FloatingPopup {
 
   async loadConfig() {
     try {
+      if (!chrome.runtime || !chrome.runtime.id) {
+        return;
+      }
+      
       const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
       if (response.success) {
         this.config = response.data;
       }
     } catch (error) {
-      console.error('Failed to load config:', error);
+      if (error.message && error.message.includes('Extension context invalidated')) {
+        console.log('Extension context invalidated');
+      } else {
+        console.error('Failed to load config:', error);
+      }
     }
   }
 
   async requestTranslation(text) {
     try {
+      if (!chrome.runtime || !chrome.runtime.id) {
+        this.displayError('扩展上下文失效，请刷新页面');
+        return;
+      }
+      
       const response = await chrome.runtime.sendMessage({
         action: 'translate',
         text: text,
@@ -108,7 +121,11 @@ class FloatingPopup {
       }
     } catch (error) {
       this.element.querySelector('.loading').style.display = 'none';
-      this.displayError('翻译服务异常');
+      if (error.message && error.message.includes('Extension context invalidated')) {
+        this.displayError('扩展已更新，请刷新页面');
+      } else {
+        this.displayError('翻译服务异常');
+      }
     }
   }
 
