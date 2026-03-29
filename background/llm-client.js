@@ -4,7 +4,7 @@ import { ENGINE_TYPES, PROMPT_TEMPLATES } from '../shared/constants.js';
 
 class LLMClient {
   constructor() {
-    this.timeout = 120000; // 增加到 120 秒（2分钟）
+    this.timeout = 120000; // 2分钟超时
   }
 
   async translate(text, isWord, targetLang) {
@@ -13,8 +13,16 @@ class LLMClient {
       ? PROMPT_TEMPLATES.word(text, targetLang)
       : PROMPT_TEMPLATES.sentence(text, targetLang);
 
+    console.log('=== Translation Request ===');
+    console.log('Text:', text);
+    console.log('IsWord:', isWord);
+    console.log('TargetLang:', targetLang);
+    console.log('Engine:', engineConfig.engineType);
+    console.log('Model:', engineConfig.modelName);
+
     try {
       const response = await this.callLLM(engineConfig, prompt);
+      console.log('LLM Response:', response);
       return {
         success: true,
         data: response
@@ -31,7 +39,7 @@ class LLMClient {
   async callLLM(config, prompt) {
     const { apiUrl, apiPath, modelName, engineType } = config;
     
-    // Ollama 直接使用原生 API 避免 CORS 问题
+    // Ollama 直接使用原生 API
     if (engineType === ENGINE_TYPES.OLLAMA) {
       return await this.callOllamaNative(apiUrl, modelName, prompt);
     }
@@ -84,39 +92,55 @@ class LLMClient {
   }
 
   async callOllamaNative(apiUrl, modelName, prompt) {
-    console.log('Calling Ollama with model:', modelName);
-    console.log('Prompt:', prompt.substring(0, 50) + '...');
+    console.log('=== Calling Ollama ===');
+    console.log('URL:', `${apiUrl}/api/generate`);
+    console.log('Model:', modelName);
+    console.log('Prompt:', prompt);
     
     const url = `${apiUrl}/api/generate`;
     
-    const response = await this.fetchWithTimeout(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: modelName,
-        prompt: prompt,
-        stream: false
-      })
-    });
+    try {
+      const response = await this.fetchWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelName,
+          prompt: prompt,
+          stream: false
+        })
+      });
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`模型 ${modelName} 不存在，请运行: ollama pull ${modelName}`);
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(`模型 ${modelName} 不存在，请运行: ollama pull ${modelName}`);
+        }
+        throw new Error(`Ollama API error: ${response.status}`);
       }
-      throw new Error(`Ollama API error: ${response.status}`);
-    }
 
-    const data = await response.json();
-    console.log('Ollama response received');
-    return data.response;
+      const data = await response.json();
+      console.log('Ollama raw response:', data);
+      console.log('Response text:', data.response);
+      
+      if (!data.response || data.response.trim() === '') {
+        console.error('Empty response from Ollama');
+        throw new Error('模型返回空内容，请检查模型是否正常运行');
+      }
+      
+      return data.response;
+    } catch (error) {
+      console.error('Ollama call failed:', error);
+      throw error;
+    }
   }
 
   fetchWithTimeout(url, options) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('Request timeout, aborting...');
+      console.log('Request timeout after', this.timeout, 'ms');
       controller.abort();
     }, this.timeout);
     
@@ -129,22 +153,23 @@ class LLMClient {
       const engineConfig = await configManager.getEngineConfig();
       const { apiUrl, engineType, modelName } = engineConfig;
       
-      // 对于Ollama，尝试使用原生API进行简单测试
+      console.log('Testing connection to:', apiUrl);
+      
       if (engineType === ENGINE_TYPES.OLLAMA) {
         try {
-          // 尝试简单的模型列表查询
           const response = await fetch(`${apiUrl}/api/tags`, { method: 'GET' });
           if (response.ok) {
             const data = await response.json();
-            // 检查模型是否存在
+            console.log('Available models:', data.models ? data.models.map(m => m.name) : 'none');
             const hasModel = data.models && data.models.some(m => m.name === modelName);
             if (!hasModel) {
-              console.warn(`模型 ${modelName} 未找到，可用模型:`, data.models.map(m => m.name));
+              console.warn(`Model ${modelName} not found in available models`);
             }
             return response.ok;
           }
           return false;
         } catch (e) {
+          console.error('Connection test failed:', e);
           return false;
         }
       } else {
