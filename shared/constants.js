@@ -4,13 +4,14 @@ export const ENGINE_TYPES = {
   OLLAMA: 'ollama',
   VLLM: 'vllm',
   LMSTUDIO: 'lmstudio',
-  LITELLM: 'litellm'
+  LITELLM: 'litellm',
+  SHIMMY: 'shimmy'
 };
 
 export const DEFAULT_CONFIG = {
-  engineType: ENGINE_TYPES.OLLAMA,
-  apiUrl: 'http://localhost:11434',
-  modelName: 'qwen3.5:9b',
+  engineType: ENGINE_TYPES.SHIMMY,
+  apiUrl: 'http://localhost:11435',
+  modelName: 'qwen3.5-35b',
   sourceLanguages: ['英文'],
   targetLanguage: '中文',
   ttsVoice: 'auto',
@@ -24,7 +25,8 @@ export const ENGINE_DEFAULTS = {
   [ENGINE_TYPES.OLLAMA]: { apiUrl: 'http://localhost:11434', apiPath: '/v1/chat/completions' },
   [ENGINE_TYPES.VLLM]: { apiUrl: 'http://localhost:8000', apiPath: '/v1/chat/completions' },
   [ENGINE_TYPES.LMSTUDIO]: { apiUrl: 'http://localhost:1234', apiPath: '/v1/chat/completions' },
-  [ENGINE_TYPES.LITELLM]: { apiUrl: 'http://localhost:4000', apiPath: '/v1/chat/completions' }
+  [ENGINE_TYPES.LITELLM]: { apiUrl: 'http://localhost:4000', apiPath: '/v1/chat/completions' },
+  [ENGINE_TYPES.SHIMMY]: { apiUrl: 'http://localhost:11435', apiPath: '/v1/chat/completions' }
 };
 
 export const LANGUAGES = [

@@ -40,6 +40,7 @@ class SidePanel {
     document.getElementById('speakTranslationBtn').addEventListener('click', () => this.speakTranslation());
     document.getElementById('copyBtn').addEventListener('click', () => this.copyTranslation());
     document.getElementById('retryBtn').addEventListener('click', () => this.retry());
+    document.getElementById('errorRetryBtn').addEventListener('click', () => this.retry());
   }
 
   async loadConfig() {
@@ -93,7 +94,7 @@ class SidePanel {
       });
 
       if (response.success) {
-        const translation = response.data.translation || response.data;
+        const translation = response.data.meaning || response.data.translation || response.data;
         this.showResult(text, translation);
       } else {
         this.showError(response.error || '翻译失败');

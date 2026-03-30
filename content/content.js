@@ -1,31 +1,28 @@
 // content/content.js
 
-console.log('=== CONTENT SCRIPT STARTED ===');
-
 const textProcessor = new TextProcessor();
 const floatingPopup = new FloatingPopup();
 const sidebarManager = new SidebarManager();
 
 document.addEventListener('mouseup', async function() {
-  console.log('Mouse up!');
-  
   setTimeout(async function() {
     const selection = window.getSelection();
     const text = selection.toString().trim();
     
-    console.log('Selected:', text.substring(0, 50));
-    
-    if (text.length < 2) {
-      console.log('Too short');
-      return;
-    }
+    if (text.length < 2) return;
     
     const result = textProcessor.analyzeSelection(selection);
-    console.log('Analysis result:', result);
     
     if (result) {
-      console.log('Showing popup...');
-      floatingPopup.show(result.text, result.position);
+      // 判断是单词还是段落
+      const isWord = result.isWord && result.length < 30;
+      
+      if (isWord) {
+        floatingPopup.show(result.text, result.position);
+      } else {
+        floatingPopup.hide();
+        sidebarManager.open(result.text);
+      }
     }
   }, 100);
 });
@@ -44,5 +41,3 @@ document.addEventListener('keydown', function(e) {
     sidebarManager.close();
   }
 });
-
-console.log('=== READY ===');

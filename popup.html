@@ -44,8 +44,8 @@
     // 加载配置
     chrome.runtime.sendMessage({action: 'getConfig'}).then(r => {
       if (r.success && r.data) {
-        document.getElementById('apiUrl').value = r.data.apiUrl || 'http://localhost:11434';
-        document.getElementById('modelName').value = r.data.modelName || 'qwen3.5:9b';
+        document.getElementById('apiUrl').value = r.data.apiUrl || 'http://localhost:11435';
+        document.getElementById('modelName').value = r.data.modelName || 'qwen3.5-35b';
       }
     }).catch(console.error);
     
@@ -115,8 +115,17 @@
     
     // 保存配置
     document.getElementById('saveBtn').addEventListener('click', async () => {
+      // 先获取现有配置，保留 engineType
+      let engineType = 'shimmy';
+      try {
+        const r = await chrome.runtime.sendMessage({action: 'getConfig'});
+        if (r.success && r.data && r.data.engineType) {
+          engineType = r.data.engineType;
+        }
+      } catch(e) {}
+      
       const config = {
-        engineType: 'ollama',
+        engineType: engineType,
         apiUrl: document.getElementById('apiUrl').value.trim(),
         modelName: document.getElementById('modelName').value.trim(),
         targetLanguage: '中文',

@@ -79,6 +79,15 @@ async function handleMessage(request, sender, sendResponse) {
         sendResponse({ success: true, connected });
         break;
         
+      case 'openSidebarTab':
+        const extensionId = chrome.runtime.id;
+        const url = `chrome-extension://${extensionId}/sidepanel/sidepanel.html`;
+        console.log('Creating sidebar tab:', url);
+        
+        const tab = await chrome.tabs.create({ url: url, active: true });
+        sendResponse({ success: true, tabId: tab.id });
+        break;
+        
       default:
         sendResponse({ success: false, error: 'Unknown action' });
     }

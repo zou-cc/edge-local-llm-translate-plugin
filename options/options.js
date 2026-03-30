@@ -15,7 +15,8 @@ const ENGINE_DEFAULTS = {
   'ollama': { apiUrl: 'http://localhost:11434' },
   'vllm': { apiUrl: 'http://localhost:8000' },
   'lmstudio': { apiUrl: 'http://localhost:1234' },
-  'litellm': { apiUrl: 'http://localhost:4000' }
+  'litellm': { apiUrl: 'http://localhost:4000' },
+  'shimmy': { apiUrl: 'http://localhost:11435' }
 };
 
 // 页面加载完成后初始化
