@@ -79,12 +79,41 @@ class LLMClient {
         
         const data = await response.json();
         
-        if (!data.choices || !data.choices[0]?.message?.content) {
-          throw new Error('Empty response');
+        console.log('vLLM response:', JSON.stringify(data));
+        
+        // 尝试多种响应格式
+        let content = null;
+        
+        const msg = data.choices?.[0]?.message;
+        
+        if (msg) {
+          // 标准 content
+          if (msg.content) {
+            content = msg.content;
+          }
+          // Qwen3 的 thinking/reasoning 模式
+          else if (msg.reasoning || msg.thinking) {
+            content = msg.reasoning || msg.thinking;
+          }
+        }
+        
+        // 直接返回的情况
+        if (!content && data.content) {
+          content = data.content;
+        }
+        
+        // 检查 choices[0] 本身
+        if (!content && data.choices?.[0]) {
+          const choice0 = data.choices[0];
+          content = choice0.content || choice0.text || choice0.message?.content;
+        }
+        
+        if (!content) {
+          throw new Error('Empty response: ' + JSON.stringify(data).substring(0, 500));
         }
         
         console.log('OpenAI compatible response received');
-        return data.choices[0].message.content;
+        return content;
         
       } else {
         // Ollama 原生 API
