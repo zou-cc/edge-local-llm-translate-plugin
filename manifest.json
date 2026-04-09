@@ -54,7 +54,7 @@
   "commands": {
     "translate-selection": {
       "suggested_key": {
-        "default": "Alt+T"
+        "default": "Ctrl+Shift+T"
       },
       "description": "翻译选中的文本"
     }

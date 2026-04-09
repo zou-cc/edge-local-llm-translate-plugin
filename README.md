@@ -83,7 +83,7 @@ A browser extension for Edge that provides text translation using local LLM mode
 | TTS Rate | 1.0x | Speech speed |
 | Auto Translate | Enabled | Auto-translate on selection |
 | Word Threshold | 20 chars | Word vs sentence cutoff |
-| Hotkey | Alt+T | Manual translation trigger |
+| Hotkey | Ctrl+Shift+T | Manual translation trigger |
 
 ### Supported Engines
 
@@ -140,16 +140,17 @@ litellm --model ollama/qwen2.5:7b --port 8000
 ### Basic Translation
 
 1. **Select Text**: Highlight any text on a webpage (word or sentence)
-2. **View Translation**:
+2. **Press `Ctrl+Shift+T`**: Trigger translation
+3. **View Translation**:
    - **Word**: Floating popup appears near cursor
    - **Sentence**: Side panel opens on the right
-3. **Listen**: Click the speaker icon to hear pronunciation
-4. **Close**: Click outside the popup, press ESC, or click the X button
+4. **Listen**: Click the speaker icon to hear pronunciation
+5. **Close**: Press ESC to close popup/sidebar
 
 ### Manual Translation
 
 1. Select text
-2. Press `Alt+T` (default hotkey, configurable)
+2. Press `Ctrl+Shift+T` (default hotkey)
 3. Translation appears based on text length
 
 ### Side Panel Mode
@@ -162,7 +163,7 @@ litellm --model ollama/qwen2.5:7b --port 8000
 
 | Shortcut | Action |
 |----------|--------|
-| `Alt+T` | Translate selected text |
+| `Ctrl+Shift+T` | Translate selected text |
 | `ESC` | Close popup/sidebar |
 | `Ctrl+C` (in side panel) | Copy translated text |
 
