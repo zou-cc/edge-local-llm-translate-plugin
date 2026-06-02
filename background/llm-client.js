@@ -24,7 +24,8 @@ class LLMClient {
         engineConfig.apiUrl, 
         engineConfig.modelName, 
         prompt,
-        engineConfig.engineType
+        engineConfig.engineType,
+        engineConfig.apiKey
       );
       
       const duration = Date.now() - startTime;
@@ -43,7 +44,7 @@ class LLMClient {
     }
   }
 
-  async callLLM(apiUrl, modelName, prompt, engineType) {
+  async callLLM(apiUrl, modelName, prompt, engineType, apiKey) {
     console.log('Calling LLM API, engine:', engineType);
     
     const controller = new AbortController();
@@ -60,11 +61,11 @@ class LLMClient {
       
       if (useOpenAI) {
         console.log('Using OpenAI compatible API');
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
         response = await fetch(apiUrl + '/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: headers,
           body: JSON.stringify({
             model: modelName,
             messages: [{ role: 'user', content: prompt }],
@@ -173,7 +174,9 @@ class LLMClient {
       
       console.log('Testing URL:', url);
       
-      const response = await fetch(url);
+      const headers = {};
+      if (engineConfig.apiKey) headers['Authorization'] = 'Bearer ' + engineConfig.apiKey;
+      const response = await fetch(url, { headers: headers });
       console.log('Response status:', response.status);
       return response.ok;
     } catch (error) {

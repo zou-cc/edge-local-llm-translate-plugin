@@ -86,6 +86,7 @@ function populateForm(config) {
   document.getElementById('engineType').value = config.engineType || DEFAULT_CONFIG.engineType;
   document.getElementById('apiUrl').value = config.apiUrl || DEFAULT_CONFIG.apiUrl;
   document.getElementById('apiUrl').dataset.userModified = 'true';
+  document.getElementById('apiKey').value = config.apiKey || '';
   document.getElementById('modelName').value = config.modelName || DEFAULT_CONFIG.modelName;
   document.getElementById('targetLanguage').value = config.targetLanguage || DEFAULT_CONFIG.targetLanguage;
   document.getElementById('ttsRate').value = config.ttsRate || DEFAULT_CONFIG.ttsRate;
@@ -111,6 +112,7 @@ function collectFormData() {
   return {
     engineType: document.getElementById('engineType').value,
     apiUrl: document.getElementById('apiUrl').value.trim(),
+    apiKey: document.getElementById('apiKey').value.trim(),
     modelName: document.getElementById('modelName').value.trim(),
     sourceLanguages: sourceLanguages.length > 0 ? sourceLanguages : ['英文'],
     targetLanguage: document.getElementById('targetLanguage').value,

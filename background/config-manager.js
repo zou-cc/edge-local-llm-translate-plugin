@@ -32,6 +32,7 @@ class ConfigManager {
     return {
       ...defaults,
       apiUrl: config.apiUrl || defaults.apiUrl,
+      apiKey: config.apiKey || '',
       modelName: config.modelName,
       engineType: config.engineType
     };

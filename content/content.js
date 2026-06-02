@@ -6,9 +6,10 @@ const sidebarManager = new SidebarManager();
 
 // Ctrl+Shift+T 快捷键触发翻译
 document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+  if (e.ctrlKey && e.shiftKey && e.key === 'F') {
     e.preventDefault();
     
+      console.log('keydown');
     const selection = window.getSelection();
     const text = selection.toString().trim();
     

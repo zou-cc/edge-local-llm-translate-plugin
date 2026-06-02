@@ -11,6 +11,7 @@ export const ENGINE_TYPES = {
 export const DEFAULT_CONFIG = {
   engineType: ENGINE_TYPES.SHIMMY,
   apiUrl: 'http://localhost:11435',
+  apiKey: '',
   modelName: 'qwen3.5-35b',
   sourceLanguages: ['英文'],
   targetLanguage: '中文',
