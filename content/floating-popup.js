@@ -34,11 +34,11 @@ class FloatingPopup {
     `;
 
     this.element.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span class="original-text" style="font-weight: 600; font-size: 16px; color: #333; flex: 1; word-break: break-all;"></span>
-        <div style="display: flex; gap: 2px;">
-          <button class="speak-btn" style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;" title="朗读英文">🔊</button>
-          <button class="close-btn" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; color: #999;" title="关闭">✕</button>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px;">
+        <span class="original-text" style="font-weight: 600; font-size: 16px; color: #333; flex: 1; word-break: break-all; padding-top: 2px;"></span>
+        <div style="display: flex; gap: 4px; flex-shrink: 0;">
+          <button class="speak-btn" style="background: #f0f0f0; border: 1px solid #ddd; font-size: 14px; cursor: pointer; padding: 4px 8px; border-radius: 4px; line-height: 1; min-width: 28px;" title="朗读英文">🔊</button>
+          <button class="close-btn" style="background: #f0f0f0; border: 1px solid #ddd; font-size: 14px; cursor: pointer; padding: 4px 8px; border-radius: 4px; line-height: 1; min-width: 28px; color: #666;" title="关闭">✕</button>
         </div>
       </div>
       <div class="phonetic" style="color: #666; font-family: serif; font-size: 13px; margin-bottom: 6px;"></div>
