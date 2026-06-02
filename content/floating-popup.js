@@ -5,6 +5,7 @@ class FloatingPopup {
     this.element = null;
     this.currentText = null;
     this.translationText = null;
+    this.englishText = null;
     this.isVisible = false;
     this.ttsRate = 1.0;
     this.createElement();
@@ -111,6 +112,7 @@ class FloatingPopup {
         const raw = response.data?.meaning || response.data?.translation || '无结果';
         const parsed = this.parseResponse(raw);
         this.translationText = parsed.meaning;
+        this.englishText = parsed.englishExample || text;
 
         if (parsed.phonetic) {
           const ph = this.element.querySelector('.phonetic');
@@ -135,7 +137,7 @@ class FloatingPopup {
   parseResponse(text) {
     let phonetic = '';
     let meaning = text;
-    let example = '';
+    let englishExample = '';
 
     const phMatch = text.match(/音标[：:]\s*([^\n]+)/);
     if (phMatch) phonetic = phMatch[1].trim();
@@ -143,22 +145,27 @@ class FloatingPopup {
     const mnMatch = text.match(/释义[：:]\s*([^\n]+)/);
     if (mnMatch) meaning = mnMatch[1].trim();
 
-    const exMatch = text.match(/例句[：:]\s*([^\n]+(?:\n[^\n]+)*)/);
-    if (exMatch) example = exMatch[1].trim();
-
-    if (mnMatch || phMatch) {
-      let result = meaning;
-      if (example) result += '\n例句: ' + example.split('\n')[0];
-      return { phonetic, meaning: result };
+    const exMatch = text.match(/例句[：:]\s*([^\n]+)/);
+    if (exMatch) {
+      const exFull = exMatch[1].trim();
+      const cnIdx = exFull.search(/[一-龥]/);
+      englishExample = cnIdx > 0 ? exFull.substring(0, cnIdx).trim() : exFull;
     }
 
-    return { phonetic, meaning: text.trim() };
+    if (mnMatch || phMatch) {
+      let display = meaning;
+      if (englishExample) display += '\n例句: ' + englishExample;
+      return { phonetic, meaning: display, englishExample };
+    }
+
+    return { phonetic, meaning: text.trim(), englishExample: '' };
   }
 
   speak() {
-    console.log('speak() called, text:', this.translationText);
-    if (!this.translationText) {
-      console.warn('No translation text to speak');
+    console.log('speak() called, english:', this.englishText);
+    const text = this.englishText || this.currentText;
+    if (!text) {
+      console.warn('No text to speak');
       return;
     }
 
@@ -167,11 +174,9 @@ class FloatingPopup {
         window.speechSynthesis.cancel();
       }
 
-      const text = this.translationText.replace(/例句[：:].*$/gm, '').replace(/音标[：:].*$/gm, '').trim();
-      console.log('Speaking cleaned text:', text);
-
+      console.log('Speaking:', text);
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = /[一-龥]/.test(text) ? 'zh-CN' : 'en-US';
+      utterance.lang = 'en-US';
       utterance.rate = this.ttsRate;
       utterance.volume = 1.0;
 
