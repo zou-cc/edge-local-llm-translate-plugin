@@ -9,6 +9,7 @@ class FloatingPopup {
     this.isVisible = false;
     this.ttsRate = 1.0;
     this.createElement();
+    this.bindGlobalListeners();
   }
 
   setTtsRate(rate) {
@@ -21,8 +22,8 @@ class FloatingPopup {
     this.element.style.cssText = `
       position: fixed;
       z-index: 2147483647;
-      min-width: 200px;
-      max-width: 280px;
+      min-width: 220px;
+      max-width: 320px;
       background: white;
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -34,8 +35,11 @@ class FloatingPopup {
 
     this.element.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span class="original-text" style="font-weight: 600; font-size: 16px; color: #333; flex: 1;"></span>
-        <button class="speak-btn" style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px;" title="朗读">🔊</button>
+        <span class="original-text" style="font-weight: 600; font-size: 16px; color: #333; flex: 1; word-break: break-all;"></span>
+        <div style="display: flex; gap: 2px;">
+          <button class="speak-btn" style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;" title="朗读英文">🔊</button>
+          <button class="close-btn" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; color: #999;" title="关闭">✕</button>
+        </div>
       </div>
       <div class="phonetic" style="color: #666; font-family: serif; font-size: 13px; margin-bottom: 6px;"></div>
       <div class="loading" style="color: #999; text-align: center; padding: 12px;">翻译中...</div>
@@ -52,10 +56,33 @@ class FloatingPopup {
       this.speak();
     });
 
+    const closeBtn = this.element.querySelector('.close-btn');
+    closeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+    closeBtn.addEventListener('mouseup', (e) => e.stopPropagation());
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.hide();
+    });
+
     this.element.addEventListener('mousedown', (e) => e.stopPropagation());
     this.element.addEventListener('mouseup', (e) => e.stopPropagation());
 
     document.body.appendChild(this.element);
+  }
+
+  bindGlobalListeners() {
+    document.addEventListener('mousedown', (e) => {
+      if (this.isVisible && this.element && !this.element.contains(e.target)) {
+        this.hide();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isVisible) {
+        this.hide();
+      }
+    });
   }
 
   async show(text, position) {
@@ -79,8 +106,8 @@ class FloatingPopup {
     this.element.querySelector('.meaning').style.display = 'none';
     this.element.querySelector('.error').style.display = 'none';
 
-    const popupWidth = 250;
-    const popupHeight = 100;
+    const popupWidth = 280;
+    const popupHeight = 120;
 
     let left = (position?.viewportX || window.innerWidth / 2) - popupWidth / 2;
     let top = (position?.viewportY || 100) + 10;
@@ -162,10 +189,10 @@ class FloatingPopup {
   }
 
   speak() {
-    console.log('speak() called, english:', this.englishText);
     const text = this.englishText || this.currentText;
     if (!text) {
       console.warn('No text to speak');
+      this.flashButton('.speak-btn', '?');
       return;
     }
 
@@ -174,27 +201,56 @@ class FloatingPopup {
         window.speechSynthesis.cancel();
       }
 
-      console.log('Speaking:', text);
+      const voices = window.speechSynthesis.getVoices();
+      console.log('Available voices:', voices.length, voices.map(v => `${v.name}(${v.lang})`).slice(0, 5));
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
       utterance.rate = this.ttsRate;
       utterance.volume = 1.0;
+      utterance.pitch = 1.0;
 
-      utterance.onstart = () => console.log('TTS started');
-      utterance.onerror = (e) => console.error('TTS error:', e.error);
-      utterance.onend = () => console.log('TTS ended');
+      const enVoice = voices.find(v => v.lang.startsWith('en'));
+      if (enVoice) utterance.voice = enVoice;
 
-      window.speechSynthesis.speak(utterance);
+      utterance.onstart = () => {
+        console.log('TTS started');
+        this.flashButton('.speak-btn', '🔊');
+      };
+      utterance.onerror = (e) => {
+        console.error('TTS error:', e.error, e);
+        this.flashButton('.speak-btn', '⚠');
+      };
+      utterance.onend = () => {
+        console.log('TTS ended');
+        this.flashButton('.speak-btn', '🔊');
+      };
+
+      const spoke = window.speechSynthesis.speak(utterance);
+      console.log('speak() invoked, returned:', spoke);
     } catch (e) {
       console.error('TTS exception:', e);
+      this.flashButton('.speak-btn', '⚠');
     }
   }
 
+  flashButton(selector, emoji) {
+    const btn = this.element.querySelector(selector);
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = emoji;
+    setTimeout(() => { btn.textContent = orig; }, 1000);
+  }
+
   hide() {
+    if (!this.isVisible) return;
     console.log('hide() called');
     this.isVisible = false;
     if (this.element) {
       this.element.style.display = 'none';
+    }
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
     }
   }
 
