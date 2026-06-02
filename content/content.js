@@ -7,6 +7,7 @@ const sidebarManager = new SidebarManager();
 let autoTranslate = true;
 let targetLanguage = '中文';
 let wordThreshold = 50;
+let ttsRate = 1.0;
 
 (async function init() {
   try {
@@ -15,7 +16,9 @@ let wordThreshold = 50;
       autoTranslate = r.data.autoTranslate !== false;
       targetLanguage = r.data.targetLanguage || '中文';
       wordThreshold = r.data.wordThreshold || 50;
+      ttsRate = r.data.ttsRate || 1.0;
       textProcessor.wordThreshold = wordThreshold;
+      floatingPopup.setTtsRate(ttsRate);
     }
   } catch (e) {
     console.error('init config error:', e);
