@@ -196,13 +196,27 @@ class FloatingPopup {
       return;
     }
 
+    if (!window.speechSynthesis) {
+      this.showError('浏览器不支持语音合成');
+      return;
+    }
+
     try {
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
       }
 
-      const voices = window.speechSynthesis.getVoices();
+      let voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) {
+        voices = window.speechSynthesis.getVoices();
+      }
       console.log('Available voices:', voices.length, voices.map(v => `${v.name}(${v.lang})`).slice(0, 5));
+
+      if (!voices || voices.length === 0) {
+        this.showError('无可用语音，请启动 speech-dispatcher 服务');
+        this.flashButton('.speak-btn', '⚠');
+        return;
+      }
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
@@ -210,28 +224,33 @@ class FloatingPopup {
       utterance.volume = 1.0;
       utterance.pitch = 1.0;
 
-      const enVoice = voices.find(v => v.lang.startsWith('en'));
-      if (enVoice) utterance.voice = enVoice;
+      const enVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+      if (enVoice) {
+        utterance.voice = enVoice;
+        utterance.lang = enVoice.lang;
+      }
 
-      utterance.onstart = () => {
-        console.log('TTS started');
-        this.flashButton('.speak-btn', '🔊');
-      };
+      utterance.onstart = () => console.log('TTS started');
       utterance.onerror = (e) => {
         console.error('TTS error:', e.error, e);
+        this.showError('TTS 错误: ' + (e.error || 'unknown'));
         this.flashButton('.speak-btn', '⚠');
       };
-      utterance.onend = () => {
-        console.log('TTS ended');
-        this.flashButton('.speak-btn', '🔊');
-      };
+      utterance.onend = () => console.log('TTS ended');
 
-      const spoke = window.speechSynthesis.speak(utterance);
-      console.log('speak() invoked, returned:', spoke);
+      window.speechSynthesis.speak(utterance);
     } catch (e) {
       console.error('TTS exception:', e);
+      this.showError('朗读失败: ' + e.message);
       this.flashButton('.speak-btn', '⚠');
     }
+  }
+
+  showError(msg) {
+    const errEl = this.element.querySelector('.error');
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    setTimeout(() => { errEl.style.display = 'none'; }, 3000);
   }
 
   flashButton(selector, emoji) {
