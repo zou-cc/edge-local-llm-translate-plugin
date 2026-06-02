@@ -44,17 +44,19 @@
 }
 
 .speak-btn {
-  background: none;
-  border: none;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   padding: 4px 8px;
   border-radius: 4px;
+  line-height: 1;
+  min-width: 28px;
   transition: background 0.2s;
 }
 
 .speak-btn:hover {
-  background: #f0f0f0;
+  background: #e0e0e0;
 }
 
 .phonetic {
@@ -78,6 +80,7 @@
   color: #2c5282;
   font-size: 15px;
   margin-bottom: 8px;
+  white-space: pre-wrap;
 }
 
 .example {
@@ -112,23 +115,19 @@
 }
 
 .close-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: #999;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  color: #666;
   cursor: pointer;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 4px 8px;
+  line-height: 1;
+  min-width: 28px;
   border-radius: 4px;
+  transition: background 0.2s;
 }
 
 .close-btn:hover {
-  background: #f0f0f0;
+  background: #e0e0e0;
   color: #333;
 }
